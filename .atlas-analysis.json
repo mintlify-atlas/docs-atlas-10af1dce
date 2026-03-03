@@ -1,0 +1,110 @@
+{
+  "projectType": "saas",
+  "projectName": "Open Chat Widget",
+  "projectDescription": "Embeddable AI chat widget with streaming responses, built with Convex, OpenAI, Express, and Next.js",
+  "theme": "palm",
+  "primaryColor": "#0ea5e9",
+  "lightColor": "#7dd3fc",
+  "darkColor": "#0c4a6e",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Widget Integration",
+            "pages": [
+              "widget/embedding",
+              "widget/configuration",
+              "widget/customization"
+            ]
+          },
+          {
+            "group": "Headless API",
+            "pages": [
+              "headless/overview",
+              "headless/non-streaming",
+              "headless/streaming"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard/overview",
+              "dashboard/authentication",
+              "dashboard/conversations"
+            ]
+          },
+          {
+            "group": "Deployment",
+            "pages": [
+              "deployment/overview",
+              "deployment/convex",
+              "deployment/backend",
+              "deployment/dashboard",
+              "deployment/docker"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "security/overview",
+              "security/api-keys",
+              "security/cors"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/health",
+              "api/chat",
+              "api/chat-stream",
+              "api/widget-bundle",
+              "api/openapi"
+            ]
+          },
+          {
+            "group": "Admin Endpoints",
+            "pages": [
+              "api/admin/list-conversations",
+              "api/admin/get-conversation"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Embeddable vanilla TypeScript widget with streaming responses",
+    "Headless chat API for custom frontends",
+    "Next.js admin dashboard with conversation management",
+    "Convex backend for real-time data storage",
+    "OpenAI integration with streaming support",
+    "API key authentication and CORS protection",
+    "Docker support for self-hosting",
+    "Rate limiting and security headers"
+  ],
+  "publicApiSurface": [
+    "POST /v1/chat",
+    "POST /v1/chat/stream",
+    "POST /chat",
+    "GET /v1/admin/conversations",
+    "GET /v1/admin/conversations/:conversationId",
+    "GET /health",
+    "GET /widget/chat-widget.js",
+    "GET /v1/openapi.json"
+  ]
+}
