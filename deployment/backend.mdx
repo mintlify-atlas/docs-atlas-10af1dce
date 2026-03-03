@@ -74,6 +74,9 @@ ADMIN_API_KEY=strong-random-secret-here
 RATE_LIMIT_WINDOW_MS=60000
 RATE_LIMIT_MAX_REQUESTS=30
 
+# Conversation history
+MAX_HISTORY_MESSAGES=30
+
 # Widget bundle path (usually auto-detected)
 WIDGET_BUNDLE_PATH=../widget/dist/chat-widget.js
 ```
@@ -109,6 +112,22 @@ CORS_ORIGIN=https://yoursite.com,https://dashboard.yoursite.com
 
 #### PORT
 Port the server listens on. Default: `4000`.
+
+#### MAX_HISTORY_MESSAGES
+Maximum number of conversation messages to include in the OpenAI context window. Default: `30`.
+
+This controls how much conversation history is sent to the AI model. Higher values provide more context but increase API costs and latency.
+
+#### RATE_LIMIT_WINDOW_MS
+Time window for rate limiting in milliseconds. Default: `60000` (1 minute).
+
+#### RATE_LIMIT_MAX_REQUESTS
+Maximum number of requests allowed per IP address within the rate limit window. Default: `30`.
+
+#### WIDGET_BUNDLE_PATH
+Path to the compiled widget bundle. Default: `../widget/dist/chat-widget.js`.
+
+Usually auto-detected when running from the project root.
 
 ## Platform-Specific Instructions
 
