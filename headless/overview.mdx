@@ -1,0 +1,73 @@
+---
+title: "Headless API Overview"
+description: "Use the Open Chat Widget API without embedding the widget UI"
+---
+
+The Headless API allows you to integrate the chat functionality into your own custom frontend without using the embeddable widget. This is useful when you want to build a custom UI or integrate chat into mobile apps, desktop applications, or other non-web platforms.
+
+## Available Endpoints
+
+The Headless API provides two main chat endpoints:
+
+- **`POST /v1/chat`** - Non-streaming endpoint that returns the complete response in a single JSON payload
+- **`POST /v1/chat/stream`** - Streaming endpoint that returns the response as NDJSON events
+
+## When to Use Each Endpoint
+
+### Non-Streaming (`/v1/chat`)
+
+Use this endpoint when:
+- You want a simple request/response pattern
+- Your UI doesn't need to display tokens as they arrive
+- You're building a basic chatbot integration
+- Network latency is not a primary concern
+
+### Streaming (`/v1/chat/stream`)
+
+Use this endpoint when:
+- You want to display responses as they're generated (better UX)
+- You're building a real-time chat experience
+- You want to minimize perceived latency
+- You need to handle partial responses (e.g., show typing indicators)
+
+## Authentication
+
+Both endpoints require authentication using your Widget API key. You can provide this key using either header:
+
+- `x-api-key: <WIDGET_API_KEY>`
+- `x-widget-api-key: <WIDGET_API_KEY>` (legacy)
+
+<Warning>
+  Keep your `WIDGET_API_KEY` secure and never expose it in client-side code. Always make API requests from your backend server.
+</Warning>
+
+## Request Format
+
+Both endpoints accept the same JSON request body:
+
+```json
+{
+  "sessionId": "string",
+  "message": "string"
+}
+```
+
+### Parameters
+
+- **sessionId** (required): A unique identifier for the user session. Must be 1-128 characters, alphanumeric with `._:-` allowed. This groups messages into conversations.
+- **message** (required): The user's message. Must be 1-4000 characters.
+
+## Rate Limiting
+
+The API includes built-in rate limiting based on client IP address. If you exceed the rate limit, you'll receive a `429 Too Many Requests` response.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Non-Streaming API" icon="message" href="/headless/non-streaming">
+    Learn how to use the `/v1/chat` endpoint
+  </Card>
+  <Card title="Streaming API" icon="stream" href="/headless/streaming">
+    Learn how to use the `/v1/chat/stream` endpoint
+  </Card>
+</CardGroup>

@@ -1,0 +1,314 @@
+---
+title: "Docker Deployment"
+description: "Deploy Open Chat Widget using Docker and Docker Compose for local or self-hosted environments"
+---
+
+## Overview
+
+The project includes Docker support for running the backend and dashboard in containers. This is ideal for:
+- Local development
+- Self-hosted deployments
+- Consistent environments across teams
+- Testing production builds locally
+
+## Prerequisites
+
+- Docker 20+
+- Docker Compose 2+
+- [Convex deployed](/deployment/convex) with production `CONVEX_URL`
+- `.env` file configured
+
+## Quick Start
+
+### 1. Configure Environment
+
+Create `.env` file in the project root:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your values:
+
+```bash
+# Convex
+CONVEX_URL=https://your-deployment.convex.cloud
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4.1-mini
+
+# Widget backend
+WIDGET_API_KEY=change-me-widget-key
+ADMIN_API_KEY=change-me-admin-api-key
+PORT=4000
+CORS_ORIGIN=http://localhost:3000
+WIDGET_BUNDLE_PATH=/app/widget/dist/chat-widget.js
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=30
+
+# Dashboard
+DASHBOARD_PASSWORD=change-me-admin-password
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+NEXT_PUBLIC_WIDGET_SCRIPT_URL=http://localhost:4000/widget/chat-widget.js
+```
+
+### 2. Start Services
+
+```bash
+docker compose up --build
+```
+
+This builds and starts:
+- **Backend** on `http://localhost:4000`
+- **Dashboard** on `http://localhost:3000`
+
+## Docker Compose Configuration
+
+The `docker-compose.yml` file defines two services:
+
+```yaml
+services:
+  backend:
+    build:
+      context: .
+      target: backend
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      WIDGET_BUNDLE_PATH: /app/widget/dist/chat-widget.js
+    ports:
+      - "4000:4000"
+
+  dashboard:
+    build:
+      context: .
+      target: dashboard
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+```
+
+## Dockerfile Structure
+
+The `Dockerfile` uses multi-stage builds:
+
+### Stage 1: Dependencies (`deps`)
+
+```dockerfile
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+COPY package*.json ./
+COPY backend/package.json ./backend/package.json
+COPY dashboard/package.json ./dashboard/package.json
+COPY widget/package.json ./widget/package.json
+
+RUN npm install
+```
+
+Installs all dependencies for all workspaces.
+
+### Stage 2: Builder
+
+```dockerfile
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+
+RUN npm run build --workspace widget
+RUN npm run build --workspace backend
+RUN npm run build --workspace dashboard
+```
+
+Builds all three components.
+
+### Stage 3: Backend Image
+
+```dockerfile
+FROM node:20-alpine AS backend
+WORKDIR /app
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/backend ./backend
+COPY --from=builder /app/widget/dist ./widget/dist
+COPY package.json ./package.json
+
+EXPOSE 4000
+CMD ["npm", "run", "start", "--workspace", "backend"]
+```
+
+Creates lightweight production backend image with widget bundle.
+
+### Stage 4: Dashboard Image
+
+```dockerfile
+FROM node:20-alpine AS dashboard
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/dashboard ./dashboard
+COPY package.json ./package.json
+
+EXPOSE 3000
+CMD ["npm", "run", "start", "--workspace", "dashboard"]
+```
+
+Creates lightweight production dashboard image.
+
+## Port Mappings
+
+- **Backend**: `4000:4000` (host:container)
+  - Access at `http://localhost:4000`
+  - Widget bundle: `http://localhost:4000/widget/chat-widget.js`
+  - API endpoints: `http://localhost:4000/v1/chat`
+
+- **Dashboard**: `3000:3000` (host:container)
+  - Access at `http://localhost:3000`
+  - Login: `http://localhost:3000/login`
+  - Widget test: `http://localhost:3000/widget-test.html`
+
+## Docker Commands
+
+### Start in Background
+
+```bash
+docker compose up -d --build
+```
+
+### View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Backend only
+docker compose logs -f backend
+
+# Dashboard only
+docker compose logs -f dashboard
+```
+
+### Stop Services
+
+```bash
+docker compose down
+```
+
+### Rebuild After Code Changes
+
+```bash
+docker compose up --build
+```
+
+### Remove Volumes
+
+```bash
+docker compose down -v
+```
+
+## Environment Variables
+
+Docker Compose loads variables from `.env` file automatically. The `env_file` directive passes all variables to containers.
+
+You can override specific variables in `docker-compose.yml` under the `environment` section.
+
+## Production Self-Hosting
+
+For production self-hosted deployments:
+
+1. **Build production images**:
+```bash
+docker build --target backend -t chat-backend .
+docker build --target dashboard -t chat-dashboard .
+```
+
+2. **Push to registry** (optional):
+```bash
+docker tag chat-backend your-registry.com/chat-backend
+docker push your-registry.com/chat-backend
+
+docker tag chat-dashboard your-registry.com/chat-dashboard
+docker push your-registry.com/chat-dashboard
+```
+
+3. **Deploy with production environment variables**:
+```bash
+# Update .env with production values
+CONVEX_URL=https://production.convex.cloud
+CORS_ORIGIN=https://yoursite.com
+NEXT_PUBLIC_BACKEND_URL=https://api.yoursite.com
+
+# Start services
+docker compose up -d
+```
+
+4. **Use reverse proxy** (Nginx/Caddy) for HTTPS:
+```nginx
+server {
+  listen 443 ssl;
+  server_name api.yoursite.com;
+  
+  location / {
+    proxy_pass http://localhost:4000;
+  }
+}
+
+server {
+  listen 443 ssl;
+  server_name dashboard.yoursite.com;
+  
+  location / {
+    proxy_pass http://localhost:3000;
+  }
+}
+```
+
+## Verify Docker Deployment
+
+```bash
+# Check services are running
+docker compose ps
+
+# Test backend health
+curl http://localhost:4000/health
+
+# Test widget bundle
+curl http://localhost:4000/widget/chat-widget.js
+
+# Access dashboard
+open http://localhost:3000
+```
+
+## Troubleshooting
+
+### Backend can't connect to Convex
+- Verify `CONVEX_URL` in `.env`
+- Check Convex deployment is running
+- Ensure container has internet access
+
+### Dashboard shows connection error
+- Verify `NEXT_PUBLIC_BACKEND_URL` points to backend
+- Check backend is running: `docker compose ps`
+- Check backend logs: `docker compose logs backend`
+
+### Widget not loading
+- Verify `WIDGET_BUNDLE_PATH=/app/widget/dist/chat-widget.js`
+- Check widget was built in Docker image
+- Verify backend logs for errors
+
+## Next Steps
+
+1. [Embed the widget](/quickstart) using `http://localhost:4000`
+2. Test the chat functionality
+3. View conversations at `http://localhost:3000`

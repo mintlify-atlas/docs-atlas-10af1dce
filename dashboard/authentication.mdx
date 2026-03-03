@@ -1,0 +1,195 @@
+---
+title: Dashboard Authentication
+description: Configure and use password-based authentication for the admin dashboard
+---
+
+The dashboard uses simple password-based authentication with session cookies to protect access to conversation data.
+
+## How Authentication Works
+
+Authentication is implemented using:
+
+1. **Static Password**: A single password set via environment variable
+2. **Session Cookies**: HTTP-only cookies that persist for 7 days
+3. **Server-Side Validation**: All protected routes check authentication before rendering
+4. **Rate Limiting**: Login attempts are limited to prevent brute force attacks
+
+## Setting Up Authentication
+
+### 1. Configure the Password
+
+Set the `DASHBOARD_PASSWORD` environment variable in your deployment:
+
+```bash
+DASHBOARD_PASSWORD=your-strong-password-here
+```
+
+For local development, add it to your `.env` file:
+
+```bash
+cp .env.example .env
+# Edit .env and set DASHBOARD_PASSWORD
+```
+
+<Warning>
+Use a strong, randomly generated password. Avoid common words or predictable patterns.
+</Warning>
+
+### 2. Access the Login Page
+
+Navigate to `/login` to access the authentication page:
+
+```
+http://localhost:3000/login          # Development
+https://your-domain.com/login        # Production
+```
+
+### 3. Enter Your Password
+
+The login form accepts the password configured in `DASHBOARD_PASSWORD`. Upon successful authentication:
+
+- A session cookie is created (`os_chatbot_dashboard_auth`)
+- You're redirected to the main dashboard at `/`
+- The cookie persists for 7 days
+
+## Security Implementation
+
+The authentication system includes several security measures:
+
+### Timing-Safe Password Comparison
+
+Passwords are compared using `timingSafeEqual` from Node.js crypto module to prevent timing attacks:
+
+```typescript dashboard/app/api/login/route.ts
+function secureEquals(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+```
+
+### Rate Limiting
+
+Login attempts are rate-limited by IP address:
+
+- **Window**: 60 seconds (1 minute)
+- **Max Attempts**: 10 attempts per window
+- **Response**: 429 Too Many Requests after limit exceeded
+
+From `dashboard/app/api/login/route.ts:10`:
+
+```typescript
+const LOGIN_WINDOW_MS = 60_000;
+const LOGIN_MAX_ATTEMPTS = 10;
+```
+
+### HTTP-Only Cookies
+
+Authentication cookies are configured with secure settings:
+
+```typescript dashboard/lib/auth.ts
+export function attachAuthCookie(response: NextResponse): void {
+  response.cookies.set({
+    name: AUTH_COOKIE_NAME,
+    value: AUTH_COOKIE_VALUE,
+    httpOnly: true,           // Not accessible via JavaScript
+    sameSite: "lax",          // CSRF protection
+    secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7  // 7 days
+  });
+}
+```
+
+### Protected Routes
+
+All dashboard pages except `/login` require authentication. This is enforced server-side:
+
+```typescript dashboard/app/page.tsx
+export default async function DashboardPage() {
+  await requireAuth(); // Redirects to /login if not authenticated
+  const conversations = await listConversations();
+  // ...
+}
+```
+
+From `dashboard/lib/auth.ts:23`:
+
+```typescript
+export async function requireAuth(): Promise<void> {
+  const authenticated = await isAuthenticated();
+
+  if (!authenticated) {
+    redirect("/login");
+  }
+}
+```
+
+## Session Management
+
+### Cookie Details
+
+- **Cookie Name**: `os_chatbot_dashboard_auth`
+- **Duration**: 7 days from login
+- **Scope**: Entire dashboard domain
+- **Security**: HTTP-only, SameSite=lax
+
+### Logging Out
+
+To end your session, click the "Log out" button on any dashboard page. This:
+
+1. Clears the authentication cookie
+2. Redirects you to `/login`
+3. Requires re-authentication to access protected pages
+
+The logout endpoint is at `dashboard/app/api/logout/route.ts`.
+
+## Production Deployment
+
+When deploying to production:
+
+### Environment Variables
+
+Set these variables in your hosting platform (e.g., Vercel):
+
+```bash
+DASHBOARD_PASSWORD=<strong-random-password>
+CONVEX_URL=https://<your-project>.convex.cloud
+NEXT_PUBLIC_BACKEND_URL=https://<backend-domain>
+```
+
+### HTTPS Requirement
+
+In production (`NODE_ENV=production`), the authentication cookie has the `secure` flag enabled, requiring HTTPS. Always deploy the dashboard over HTTPS to ensure:
+
+- Encrypted password transmission
+- Secure cookie handling
+- Protection against man-in-the-middle attacks
+
+## Troubleshooting
+
+### "Invalid password" Error
+
+Ensure:
+- `DASHBOARD_PASSWORD` is set correctly in your environment
+- No extra whitespace or quotes in the password value
+- Environment variables are loaded properly
+
+### Rate Limit Errors
+
+If you see "Too many login attempts":
+- Wait 60 seconds before trying again
+- Check that you're using the correct password
+- Contact your admin if locked out repeatedly
+
+### Cookie Not Persisting
+
+If you're logged out immediately:
+- Check browser cookie settings
+- Ensure cookies are enabled for the dashboard domain
+- In production, verify HTTPS is configured

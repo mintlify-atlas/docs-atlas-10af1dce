@@ -1,0 +1,185 @@
+---
+title: "Deploy Dashboard"
+description: "Deploy the Next.js admin dashboard to Vercel or other platforms"
+---
+
+## Overview
+
+The dashboard is a Next.js application that provides:
+- Password-protected admin interface
+- View all conversations and messages
+- Real-time data from Convex
+- Test pages for widget and headless API
+
+The dashboard is **optional** - you can deploy just the backend and widget if you don't need the admin interface.
+
+## Prerequisites
+
+- [Convex deployed](/deployment/convex) with production `CONVEX_URL`
+- [Backend deployed](/deployment/backend) with production URL
+- Vercel account (recommended) or other Next.js host
+
+## Vercel Deployment (Recommended)
+
+### Quick Deploy
+
+1. Import your repository to Vercel
+2. Configure project settings:
+   - **Root Directory**: `dashboard`
+   - **Framework Preset**: Next.js
+   - **Build Command**: `npm run build` (auto-detected)
+   - **Install Command**: `npm install` (auto-detected)
+3. Add environment variables (see below)
+4. Deploy
+
+### Environment Variables
+
+```bash
+# Convex backend
+CONVEX_URL=https://your-deployment.convex.cloud
+
+# Dashboard authentication
+DASHBOARD_PASSWORD=strong-random-password-here
+
+# Backend API URL (public)
+NEXT_PUBLIC_BACKEND_URL=https://your-backend.com
+
+# Widget script URL (optional, for test pages)
+NEXT_PUBLIC_WIDGET_SCRIPT_URL=https://your-backend.com/widget/chat-widget.js
+```
+
+### Environment Variable Details
+
+#### CONVEX_URL
+Your production Convex deployment URL. Same URL used by the backend.
+
+#### DASHBOARD_PASSWORD
+Password for accessing the dashboard at `/login`. Generate a strong password:
+```bash
+openssl rand -base64 24
+```
+
+#### NEXT_PUBLIC_BACKEND_URL
+Public URL of your deployed backend. Used by test pages and to fetch OpenAPI spec.
+
+Example: `https://your-backend.onrender.com`
+
+#### NEXT_PUBLIC_WIDGET_SCRIPT_URL
+Optional. URL to the widget JavaScript bundle. Used by test pages.
+
+Example: `https://your-backend.onrender.com/widget/chat-widget.js`
+
+## Other Platforms
+
+### Railway
+
+1. Create new project from GitHub repo
+2. Settings:
+   - **Root Directory**: `dashboard`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm run start`
+3. Add environment variables
+4. Deploy
+
+### Generic Node.js Host
+
+1. SSH into your server
+2. Navigate to `dashboard/` directory
+3. Install dependencies:
+```bash
+npm install
+```
+4. Build:
+```bash
+npm run build
+```
+5. Create `.env.local` file with environment variables
+6. Start with process manager:
+```bash
+pm2 start "npm run start" --name chat-dashboard
+```
+
+## Build Commands
+
+### Build Command
+
+```bash
+npm run build
+```
+
+This runs `next build` in the dashboard workspace.
+
+### Start Command
+
+```bash
+npm run start
+```
+
+This runs `next start` in the dashboard workspace.
+
+## Dashboard Features
+
+### Login Page
+
+Access at `/login` and enter your `DASHBOARD_PASSWORD`.
+
+### Conversations View
+
+After login, view:
+- All conversations with session IDs
+- Messages in each conversation
+- Timestamps and user/assistant roles
+- Real-time updates from Convex
+
+### Test Pages
+
+Public test pages (no login required):
+- `/widget-test.html` - Test the embeddable widget
+- `/headless-test.html` - Test the headless API
+
+These pages use `NEXT_PUBLIC_BACKEND_URL` and `NEXT_PUBLIC_WIDGET_SCRIPT_URL`.
+
+## Framework Configuration
+
+The dashboard uses:
+- **Next.js 16** with App Router
+- **React 19**
+- **Convex** for real-time data
+- Built-in password authentication
+
+### next.config.js
+
+The project includes a Next.js config. No additional configuration needed for deployment.
+
+## Verify Deployment
+
+1. Visit your dashboard URL
+2. Navigate to `/login`
+3. Enter your `DASHBOARD_PASSWORD`
+4. Verify you can see conversations (may be empty initially)
+5. Test widget at `/widget-test.html`
+6. Test headless API at `/headless-test.html`
+
+## Security Considerations
+
+- Dashboard password uses timing-safe comparison
+- Sessions are stored securely
+- `CONVEX_URL` is server-side only (not exposed to browser)
+- `NEXT_PUBLIC_*` variables are public (safe for browser)
+- Serve dashboard over HTTPS
+- Rotate `DASHBOARD_PASSWORD` regularly
+
+## Optional Deployment
+
+The dashboard is optional. You can skip deploying it if:
+- You don't need to view conversations in a UI
+- You prefer to use Convex dashboard directly
+- You only need the widget or headless API
+
+The backend works independently without the dashboard.
+
+## Next Steps
+
+1. [Embed the widget](/quickstart) on your website
+2. Test the chat functionality
+3. Monitor conversations in your dashboard

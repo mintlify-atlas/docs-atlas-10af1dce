@@ -1,0 +1,106 @@
+---
+title: "Widget Bundle"
+api: "GET /widget/chat-widget.js"
+description: "Retrieve the compiled chat widget JavaScript bundle"
+---
+
+## Endpoint
+
+```
+GET /widget/chat-widget.js
+```
+
+## Authentication
+
+No authentication required.
+
+## Response
+
+Returns the compiled JavaScript bundle for the chat widget.
+
+**Content-Type:** `application/javascript; charset=utf-8`
+
+### Success Response (200)
+
+Returns the JavaScript bundle file that can be embedded in web pages.
+
+```javascript
+// Compiled widget bundle content
+(function() {
+  // Widget initialization code
+  // ...
+})();
+```
+
+## Error Responses
+
+### 404 Not Found
+
+Returned when the widget bundle has not been built yet.
+
+```json
+{
+  "error": "Widget bundle not found. Build the widget with `npm run build --workspace widget`."
+}
+```
+
+## Example Requests
+
+```bash cURL
+curl https://your-api-domain.com/widget/chat-widget.js
+```
+
+```html HTML Embed
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Website</title>
+</head>
+<body>
+  <h1>Welcome to my website</h1>
+  
+  <!-- Load the chat widget -->
+  <script src="https://your-api-domain.com/widget/chat-widget.js"></script>
+  
+  <!-- Initialize the widget -->
+  <script>
+    window.ChatWidget.init({
+      apiUrl: 'https://your-api-domain.com',
+      apiKey: 'your-api-key-here',
+      position: 'bottom-right'
+    });
+  </script>
+</body>
+</html>
+```
+
+```javascript JavaScript (Dynamic Loading)
+const script = document.createElement('script');
+script.src = 'https://your-api-domain.com/widget/chat-widget.js';
+script.async = true;
+
+script.onload = () => {
+  window.ChatWidget.init({
+    apiUrl: 'https://your-api-domain.com',
+    apiKey: 'your-api-key-here'
+  });
+};
+
+document.head.appendChild(script);
+```
+
+## Caching
+
+The endpoint sets different cache headers based on environment:
+
+- **Production:** `Cache-Control: public, max-age=300, immutable` (5 minute cache)
+- **Development:** `Cache-Control: no-store` (no caching)
+
+## Notes
+
+- The widget bundle must be built before it can be served
+- Build the widget using: `npm run build --workspace widget`
+- The bundle path is configured via the `WIDGET_BUNDLE_PATH` environment variable
+- The widget is served with CORS headers configured on the server
+- In production, the bundle is cached for 5 minutes to reduce server load
+- The widget automatically connects to the chat API endpoints on the same domain

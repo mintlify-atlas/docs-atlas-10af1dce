@@ -1,0 +1,154 @@
+---
+title: "Non-Streaming API"
+description: "Send chat messages and receive complete responses in a single JSON payload"
+---
+
+The non-streaming endpoint (`POST /v1/chat`) provides a simple request/response pattern where the entire assistant message is returned once it's fully generated.
+
+## Endpoint
+
+```
+POST /v1/chat
+```
+
+## Request Headers
+
+```http
+Content-Type: application/json
+x-api-key: <WIDGET_API_KEY>
+```
+
+You can also use `x-widget-api-key` instead of `x-api-key`.
+
+## Request Body
+
+```json
+{
+  "sessionId": "my-session-id",
+  "message": "Hello, how can you help me?"
+}
+```
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Unique identifier for the user session. Must be 1-128 characters, alphanumeric with `._:-` allowed.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The user's message. Must be 1-4000 characters.
+</ParamField>
+
+## Response Format
+
+On success, returns a `200 OK` status with the following JSON:
+
+```json
+{
+  "conversationId": "...",
+  "message": "..."
+}
+```
+
+### Response Fields
+
+<ResponseField name="conversationId" type="string">
+  The unique ID of the conversation. This is automatically created or retrieved based on the `sessionId`.
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  The complete assistant response message.
+</ResponseField>
+
+## Example Usage
+
+Here's a complete example using the Fetch API:
+
+```typescript
+const response = await fetch("https://<backend-domain>/v1/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "<WIDGET_API_KEY>"
+  },
+  body: JSON.stringify({
+    sessionId: "my-session-id",
+    message: "Hello"
+  })
+});
+
+if (!response.ok) {
+  throw new Error(`HTTP error! status: ${response.status}`);
+}
+
+const data = await response.json();
+console.log(data.conversationId); // Conversation ID
+console.log(data.message); // Assistant's response
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when the request payload is invalid:
+
+```json
+{
+  "error": "Invalid request payload"
+}
+```
+
+Common causes:
+- Missing required fields
+- `sessionId` doesn't match the required pattern
+- `message` is empty or exceeds 4000 characters
+
+### 401 Unauthorized
+
+Returned when authentication fails:
+
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+Causes:
+- Missing API key header
+- Invalid API key
+
+### 429 Too Many Requests
+
+Returned when rate limit is exceeded:
+
+```json
+{
+  "error": "Too many requests"
+}
+```
+
+### 500 Internal Server Error
+
+Returned when an unexpected error occurs:
+
+```json
+{
+  "error": "Internal server error"
+}
+```
+
+## How It Works
+
+When you send a message to `/v1/chat`, the backend:
+
+1. Validates your API key and request payload (backend/src/server.ts:479-506)
+2. Creates or retrieves the conversation based on `sessionId`
+3. Adds your message to the conversation history
+4. Sends the conversation history to OpenAI
+5. Waits for the complete response to be generated
+6. Saves the assistant's message to the database
+7. Returns the complete response to you
+
+<Info>
+  The conversation history is automatically maintained across messages with the same `sessionId`. The API includes up to the most recent messages in each request to provide context.
+</Info>

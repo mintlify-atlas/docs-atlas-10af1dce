@@ -1,0 +1,86 @@
+---
+title: Security Overview
+description: Comprehensive security features protecting the Open Chat Widget backend and API
+---
+
+The Open Chat Widget implements multiple layers of security to protect your deployment, API endpoints, and user data.
+
+## Security Features
+
+### API Key Authentication
+
+Two separate API key systems protect different endpoint categories:
+
+- **WIDGET_API_KEY**: Required for all chat endpoints (`/v1/chat`, `/v1/chat/stream`, `/chat`)
+- **ADMIN_API_KEY**: Required for admin endpoints (`/v1/admin/conversations`)
+
+Both keys use timing-safe comparison to prevent timing attacks. See [API Keys](/security/api-keys) for implementation details.
+
+### Rate Limiting
+
+IP-based rate limiting prevents abuse:
+
+- Tracks request count per client IP address
+- Configurable window and max requests via environment variables:
+  - `RATE_LIMIT_WINDOW_MS`: Time window in milliseconds (default: 60000)
+  - `RATE_LIMIT_MAX_REQUESTS`: Maximum requests per window (default: 60)
+- Returns `429 Too Many Requests` when limit exceeded
+- Uses `X-Forwarded-For` header in proxied environments
+
+### CORS Protection
+
+Strict Cross-Origin Resource Sharing (CORS) configuration:
+
+- Production deployments **reject** wildcard `*` origins
+- Configurable allowed origins via `CORS_ORIGIN` environment variable
+- Supports comma-separated list of trusted domains
+- See [CORS Configuration](/security/cors) for details
+
+### Security Headers
+
+The backend automatically sets protective HTTP headers on all responses:
+
+```javascript
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+In production mode, HSTS is also enabled:
+
+```javascript
+Strict-Transport-Security: max-age=31536000; includeSubDomains
+```
+
+### Timing-Safe Comparison
+
+All API key and password comparisons use Node.js `crypto.timingSafeEqual()` to prevent timing attacks that could leak secret values through response time analysis.
+
+### Request Validation
+
+All incoming requests are validated using Zod schemas:
+
+- Chat requests: `sessionId` format, `message` length limits (1-4000 chars)
+- Session IDs: Restricted to alphanumeric and safe characters: `[A-Za-z0-9._:-]{1,128}`
+- Admin queries: Type-safe parameter validation
+
+### Additional Hardening
+
+- `X-Powered-By` header disabled to prevent server fingerprinting
+- Request body size limited to 2MB
+- No-store cache headers on sensitive endpoints
+- Widget bundle cache control based on environment
+
+## Best Practices
+
+1. **Rotate secrets regularly**: Change `WIDGET_API_KEY`, `ADMIN_API_KEY`, and `DASHBOARD_PASSWORD` periodically
+2. **Use HTTPS**: Always serve backend and dashboard over HTTPS in production
+3. **Restrict CORS**: Set `CORS_ORIGIN` to specific trusted domains only
+4. **Keep secrets server-side**: Never expose `OPENAI_API_KEY` to client-side code
+5. **Monitor rate limits**: Adjust thresholds based on your traffic patterns
+
+## Related Documentation
+
+- [API Keys](/security/api-keys) - API key configuration and rotation
+- [CORS Configuration](/security/cors) - Cross-origin access control

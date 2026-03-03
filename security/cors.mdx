@@ -1,0 +1,270 @@
+---
+title: CORS Configuration
+description: Configure Cross-Origin Resource Sharing to control which domains can access your chat API
+---
+
+The Open Chat Widget implements strict CORS (Cross-Origin Resource Sharing) policies to control which domains can access your backend API.
+
+## Environment Variable
+
+Configure allowed origins using the `CORS_ORIGIN` environment variable:
+
+```bash
+CORS_ORIGIN=https://your-site.com,https://your-dashboard.com
+```
+
+### Format
+
+- Comma-separated list of fully qualified origin URLs
+- Include protocol (https:// or http://)
+- No trailing slashes
+- Whitespace is automatically trimmed
+
+## Production Safety
+
+The backend **rejects startup** if `CORS_ORIGIN=*` in production mode:
+
+```typescript
+if (env.NODE_ENV === "production" && allowAllOrigins) {
+  throw new Error("Refusing to start with CORS_ORIGIN='*' in production.");
+}
+```
+
+This prevents accidentally exposing your API to all domains in production deployments.
+
+## Implementation Details
+
+### Origin Parsing
+
+The backend parses `CORS_ORIGIN` on startup:
+
+```typescript
+const configuredOrigins = env.CORS_ORIGIN.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowAllOrigins = configuredOrigins.includes("*");
+const allowedOriginSet = new Set(configuredOrigins.filter((origin) => origin !== "*"));
+```
+
+This creates:
+- `allowAllOrigins`: Boolean flag for wildcard detection
+- `allowedOriginSet`: Set of specific allowed origins for O(1) lookup
+
+### CORS Validation Logic
+
+Each request's origin is validated against the allowed set:
+
+```typescript
+const corsOrigin: CorsOptions["origin"] = (origin, callback) => {
+  if (!origin) {
+    callback(null, true);
+    return;
+  }
+
+  if (allowAllOrigins || allowedOriginSet.has(origin)) {
+    callback(null, true);
+    return;
+  }
+
+  callback(new Error("Blocked by CORS policy"));
+};
+```
+
+**Behavior:**
+
+1. **No origin header**: Allows request (same-origin or non-browser clients)
+2. **Origin in allowed set**: Allows request
+3. **Wildcard enabled** (dev only): Allows all origins
+4. **Origin not allowed**: Rejects with CORS error
+
+### CORS Configuration
+
+The Express CORS middleware is configured:
+
+```typescript
+app.use(
+  cors({
+    origin: corsOrigin,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "x-api-key", "x-widget-api-key", "x-admin-api-key"]
+  })
+);
+```
+
+**Allowed methods:**
+- `GET` - Health checks, widget bundle, admin endpoints
+- `POST` - Chat endpoints
+- `OPTIONS` - Preflight requests
+
+**Allowed headers:**
+- `Content-Type` - JSON request bodies
+- `x-api-key` - Chat authentication
+- `x-widget-api-key` - Chat authentication (legacy)
+- `x-admin-api-key` - Admin authentication
+
+## Configuration Examples
+
+### Development (Allow All)
+
+```bash
+NODE_ENV=development
+CORS_ORIGIN=*
+```
+
+Use only in local development. The `*` wildcard is blocked in production.
+
+### Single Domain
+
+```bash
+CORS_ORIGIN=https://your-app.com
+```
+
+### Multiple Domains
+
+```bash
+CORS_ORIGIN=https://your-app.com,https://staging.your-app.com,https://dashboard.your-app.com
+```
+
+### Subdomains
+
+Each subdomain must be listed explicitly:
+
+```bash
+CORS_ORIGIN=https://app.example.com,https://www.example.com,https://admin.example.com
+```
+
+<Note>
+  Wildcard subdomains (e.g., `https://*.example.com`) are not supported. List each subdomain explicitly.
+</Note>
+
+### Local Development with Production Backend
+
+```bash
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173,https://production-frontend.com
+```
+
+## Testing CORS Configuration
+
+### Valid Origin
+
+Request from allowed origin succeeds:
+
+```bash
+curl -X POST https://your-backend.com/v1/chat \
+  -H "Origin: https://your-app.com" \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: your-key" \
+  -d '{"sessionId":"test","message":"Hello"}'
+```
+
+Response includes:
+
+```http
+Access-Control-Allow-Origin: https://your-app.com
+```
+
+### Invalid Origin
+
+Request from unauthorized origin fails:
+
+```bash
+curl -X POST https://your-backend.com/v1/chat \
+  -H "Origin: https://malicious-site.com" \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: your-key" \
+  -d '{"sessionId":"test","message":"Hello"}'
+```
+
+Browser blocks response due to missing `Access-Control-Allow-Origin` header.
+
+### Preflight Request
+
+Browsers send OPTIONS preflight for cross-origin POST:
+
+```bash
+curl -X OPTIONS https://your-backend.com/v1/chat \
+  -H "Origin: https://your-app.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type,x-api-key"
+```
+
+Response includes:
+
+```http
+Access-Control-Allow-Origin: https://your-app.com
+Access-Control-Allow-Methods: GET,POST,OPTIONS
+Access-Control-Allow-Headers: Content-Type,x-api-key,x-widget-api-key,x-admin-api-key
+```
+
+## Common Issues
+
+### Deployment Domain Changed
+
+**Problem**: CORS errors after deploying frontend to new domain
+
+**Solution**: Add new domain to `CORS_ORIGIN` and redeploy backend:
+
+```bash
+CORS_ORIGIN=https://old-domain.com,https://new-domain.com
+```
+
+### Missing Protocol
+
+**Problem**: Origin blocked despite being in `CORS_ORIGIN`
+
+**Solution**: Include full protocol in environment variable:
+
+```bash
+# Wrong
+CORS_ORIGIN=your-app.com
+
+# Correct
+CORS_ORIGIN=https://your-app.com
+```
+
+### Trailing Slash
+
+**Problem**: Origin blocked due to trailing slash mismatch
+
+**Solution**: Remove trailing slashes from `CORS_ORIGIN`:
+
+```bash
+# Wrong
+CORS_ORIGIN=https://your-app.com/
+
+# Correct
+CORS_ORIGIN=https://your-app.com
+```
+
+### Widget Embedded in Multiple Sites
+
+**Problem**: Need to embed widget on many customer domains
+
+**Solution**: List all customer domains or use a proxy that validates origins server-side:
+
+```bash
+CORS_ORIGIN=https://customer1.com,https://customer2.com,https://customer3.com
+```
+
+For many customers, consider:
+- Dynamic CORS validation based on database of allowed customers
+- Proxy service that validates customer tokens and forwards requests
+
+## Best Practices
+
+<Warning>
+  Never use `CORS_ORIGIN=*` in production. This allows any website to make requests to your backend with users' browsers.
+</Warning>
+
+1. **Principle of least privilege**: Only allow necessary domains
+2. **Use HTTPS**: Always use `https://` origins in production
+3. **Audit regularly**: Review allowed origins quarterly
+4. **Test changes**: Verify CORS after updating origins
+5. **Document exceptions**: Note why each origin is allowed
+6. **Monitor errors**: Watch for 401/403 responses indicating blocked origins
+
+## Related Documentation
+
+- [Security Overview](/security/overview) - Complete security features
+- [API Keys](/security/api-keys) - API key authentication

@@ -1,0 +1,217 @@
+---
+title: Introduction
+description: Open-source AI chat widget with embeddable JavaScript, headless API, and admin dashboard
+---
+
+# Welcome to Open Chat Widget
+
+A complete, production-ready AI chat solution that you can self-host and customize. Built with modern technologies and designed for easy integration into any website or application.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quickstart"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Get your chat widget running locally in under 5 minutes
+  </Card>
+  <Card
+    title="Architecture"
+    icon="diagram-project"
+    href="/architecture"
+  >
+    Understand how the system components work together
+  </Card>
+  <Card
+    title="Embedding the Widget"
+    icon="code"
+    href="/widget/embedding"
+  >
+    Add the chat widget to your website with a simple script tag
+  </Card>
+  <Card
+    title="API Reference"
+    icon="book"
+    href="/api/health"
+  >
+    Integrate headless chat endpoints into custom frontends
+  </Card>
+</CardGroup>
+
+## What is Open Chat Widget?
+
+Open Chat Widget is a full-stack, open-source AI chatbot platform that provides everything you need to add intelligent conversational support to your website:
+
+- **Embeddable Widget** - Drop-in JavaScript bundle with customizable styling
+- **Headless API** - REST endpoints for building custom chat interfaces
+- **Real-time Streaming** - Token-by-token responses for instant user feedback
+- **Admin Dashboard** - Next.js dashboard to view and manage conversations
+- **Self-hosted** - Full control over your data with Convex backend
+- **Production-ready** - Built-in security, rate limiting, and Docker support
+
+## Key Features
+
+### Easy Integration
+
+Embed the chat widget with a single script tag:
+
+```html
+<script
+  src="http://localhost:4000/widget/chat-widget.js"
+  data-api-url="http://localhost:4000/chat"
+  data-api-key="your-api-key"
+  data-title="Support"
+  data-welcome-message="Hey! How can I help?"
+  data-position="right"
+  data-accent-color="#0ea5e9"
+  defer
+></script>
+```
+
+### Customizable Appearance
+
+Control the widget's look and feel through data attributes:
+- Custom title and welcome message
+- Configurable accent colors
+- Left or right positioning
+- Custom input placeholder text
+- Responsive design that works on mobile
+
+### Headless API Option
+
+Prefer to build your own UI? Use the REST API directly:
+
+<CodeGroup>
+```typescript Non-streaming
+const response = await fetch("https://your-backend.com/v1/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "your-widget-api-key"
+  },
+  body: JSON.stringify({
+    sessionId: "user-session-123",
+    message: "Hello, I need help"
+  })
+});
+
+const data = await response.json();
+// { conversationId: "...", message: "..." }
+```
+
+```typescript Streaming
+const response = await fetch("https://your-backend.com/v1/chat/stream", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "your-widget-api-key"
+  },
+  body: JSON.stringify({
+    sessionId: "user-session-123",
+    message: "Hello, I need help"
+  })
+});
+
+// Process NDJSON stream
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+// Events: {type: "start"}, {type: "token", token: "..."}, {type: "done"}
+```
+</CodeGroup>
+
+### Conversation Management
+
+The admin dashboard provides:
+- List all conversations sorted by recent activity
+- View full conversation threads with timestamps
+- Session-based tracking for returning users
+- Persistent storage with Convex database
+
+### Enterprise-Ready Security
+
+<Note>
+Built with security best practices from day one
+</Note>
+
+- API key authentication (separate keys for chat and admin)
+- Rate limiting by IP address
+- CORS configuration with origin allowlist
+- Timing-safe credential comparison
+- Security headers (X-Frame-Options, CSP, HSTS)
+- Password-protected admin dashboard
+
+## Tech Stack
+
+Built with modern, proven technologies:
+
+| Component | Technology |
+|-----------|------------|
+| Widget | Vanilla TypeScript, esbuild |
+| Backend API | Node.js, Express |
+| Database | Convex (real-time, serverless) |
+| Dashboard | Next.js 15, React Server Components |
+| AI Provider | OpenAI GPT-4 |
+| Deployment | Docker, Docker Compose |
+
+## Use Cases
+
+<CardGroup cols={3}>
+  <Card icon="headset">
+    **Customer Support**
+    
+    Answer common questions 24/7 with AI-powered responses
+  </Card>
+  <Card icon="graduation-cap">
+    **Educational Sites**
+    
+    Provide instant help to students learning on your platform
+  </Card>
+  <Card icon="store">
+    **E-commerce**
+    
+    Guide shoppers through product selection and checkout
+  </Card>
+  <Card icon="file-lines">
+    **Documentation**
+    
+    Help developers find answers in your technical docs
+  </Card>
+  <Card icon="calendar">
+    **Booking & Reservations**
+    
+    Assist users with scheduling and appointments
+  </Card>
+  <Card icon="building">
+    **Internal Tools**
+    
+    Add conversational interfaces to company dashboards
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<Steps>
+  <Step title="Run locally">
+    Follow the [Quickstart guide](/quickstart) to get the widget running on your machine
+  </Step>
+  
+  <Step title="Understand the architecture">
+    Read the [Architecture overview](/architecture) to learn how components interact
+  </Step>
+  
+  <Step title="Embed the widget">
+    Add the widget to your website and customize its appearance
+  </Step>
+  
+  <Step title="Deploy to production">
+    Host on your preferred platform (Railway, Render, Vercel, or Docker)
+  </Step>
+</Steps>
+
+---
+
+<Info>
+**Open Source & MIT Licensed**
+
+Free to use, modify, and deploy. Contribute on GitHub or adapt to your needs.
+</Info>

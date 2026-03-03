@@ -1,80 +1,366 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get your AI chat widget running locally in 5 minutes
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will get you from zero to a working chat widget in under 5 minutes.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+Before you begin, make sure you have:
 
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+- **Node.js 20+** and **npm 10+** installed
+- A **Convex account** (free at [convex.dev](https://convex.dev))
+- An **OpenAI API key** ([platform.openai.com](https://platform.openai.com))
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+New to Convex? Sign up takes 30 seconds with GitHub auth. Create a new project after signing in.
 </Note>
+
+## Installation
+
+<Steps>
+  <Step title="Clone and install dependencies">
+    ```bash
+    git clone https://github.com/your-org/open-chat-widget.git
+    cd open-chat-widget
+    npm install
+    ```
+    
+    This installs all dependencies for the backend, dashboard, and widget workspaces.
+  </Step>
+
+  <Step title="Configure environment variables">
+    Copy the example environment file:
+    
+    ```bash
+    cp .env.example .env
+    ```
+    
+    Edit `.env` with your credentials:
+    
+    ```bash .env
+    # Convex
+    CONVEX_URL=https://your-deployment.convex.cloud
+    
+    # OpenAI
+    OPENAI_API_KEY=sk-...
+    OPENAI_MODEL=gpt-4.1-mini
+    
+    # Widget backend
+    WIDGET_API_KEY=change-me-widget-key
+    ADMIN_API_KEY=change-me-admin-api-key
+    PORT=4000
+    CORS_ORIGIN=http://localhost:3000
+    WIDGET_BUNDLE_PATH=../widget/dist/chat-widget.js
+    RATE_LIMIT_WINDOW_MS=60000
+    RATE_LIMIT_MAX_REQUESTS=30
+    
+    # Dashboard
+    DASHBOARD_PASSWORD=change-me-admin-password
+    NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+    NEXT_PUBLIC_WIDGET_SCRIPT_URL=http://localhost:4000/widget/chat-widget.js
+    ```
+    
+    <Warning>
+    **Security**: Change `WIDGET_API_KEY`, `ADMIN_API_KEY`, and `DASHBOARD_PASSWORD` to strong random values before deploying to production.
+    </Warning>
+    
+    ### Getting your Convex URL
+    
+    Run `npx convex dev` once to create a dev deployment. Convex will display your URL:
+    
+    ```bash
+    npx convex dev
+    # Output: https://happy-animal-123.convex.cloud
+    ```
+    
+    Copy this URL to `CONVEX_URL` in your `.env` file.
+  </Step>
+
+  <Step title="Generate Convex types">
+    Generate TypeScript types from your Convex schema:
+    
+    ```bash
+    npm run codegen
+    ```
+    
+    This creates type definitions in `convex/_generated/` used by the backend.
+  </Step>
+
+  <Step title="Start Convex development server">
+    In a terminal window, start Convex:
+    
+    ```bash
+    npm run dev:convex
+    ```
+    
+    Keep this running. Convex will sync your schema and functions to the cloud.
+    
+    <Info>
+    Convex provides the real-time database that stores conversations and messages.
+    </Info>
+  </Step>
+
+  <Step title="Start all services">
+    In a **new terminal window**, start the backend, dashboard, and widget:
+    
+    ```bash
+    npm run dev
+    ```
+    
+    This command runs:
+    - **Backend API** on `http://localhost:4000`
+    - **Dashboard** on `http://localhost:3000`
+    - **Widget builder** (watches for changes)
+    
+    Wait for all services to start. You should see:
+    
+    ```
+    Backend listening on http://localhost:4000
+    Dashboard ready on http://localhost:3000
+    Widget compiled successfully
+    ```
+  </Step>
+</Steps>
+
+## Test the Widget
+
+Now that everything is running, let's test the chat widget.
+
+### Option 1: Built-in Test Page
+
+Open the test page included with the dashboard:
+
+```
+http://localhost:3000/widget-test.html
+```
+
+You should see:
+- A chat button in the bottom-right corner
+- Click to open the chat panel
+- Type a message and get an AI response
+
+<Tip>
+The test page demonstrates the widget with default styling. Try asking: "What can you help me with?"
+</Tip>
+
+### Option 2: Embed in Your Own Page
+
+Create a simple HTML file to test the widget:
+
+```html test-chat.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Widget Test</title>
+</head>
+<body>
+  <h1>Welcome to My Site</h1>
+  <p>This is a test page with the chat widget.</p>
+  
+  <!-- Chat Widget -->
+  <script
+    src="http://localhost:4000/widget/chat-widget.js"
+    data-api-url="http://localhost:4000/chat"
+    data-api-key="change-me-widget-key"
+    data-title="Support"
+    data-welcome-message="Hey! How can I help?"
+    data-input-placeholder="Type your question..."
+    data-position="right"
+    data-accent-color="#0ea5e9"
+    defer
+  ></script>
+</body>
+</html>
+```
+
+Open this file in your browser. The widget should appear and work immediately.
+
+<Note>
+The `data-api-key` must match `WIDGET_API_KEY` from your `.env` file.
+</Note>
+
+## View Conversations in Dashboard
+
+After sending a few test messages:
+
+<Steps>
+  <Step title="Open the dashboard">
+    Navigate to `http://localhost:3000`
+  </Step>
+  
+  <Step title="Log in">
+    Enter the password from `DASHBOARD_PASSWORD` in your `.env` file (default: `change-me-admin-password`)
+  </Step>
+  
+  <Step title="Browse conversations">
+    You'll see a list of all chat sessions, sorted by most recent activity. Click any conversation to view the full message thread.
+  </Step>
+</Steps>
+
+## Customize the Widget
+
+The widget accepts these data attributes:
+
+| Attribute | Description | Default |
+|-----------|-------------|----------|
+| `data-api-url` | Backend chat endpoint | *Required* |
+| `data-api-key` | Widget API key | *Required* |
+| `data-title` | Header text | `"Assistant"` |
+| `data-welcome-message` | First message shown | `"Hi! Ask me anything..."` |
+| `data-input-placeholder` | Input field placeholder | `"Type your message..."` |
+| `data-position` | `"left"` or `"right"` | `"right"` |
+| `data-accent-color` | Primary color (hex) | `"#0ea5e9"` |
+
+### Example: Custom Branding
+
+```html
+<script
+  src="http://localhost:4000/widget/chat-widget.js"
+  data-api-url="http://localhost:4000/chat"
+  data-api-key="your-api-key"
+  data-title="Acme Support"
+  data-welcome-message="Welcome to Acme! How can we help you today?"
+  data-input-placeholder="Describe your issue..."
+  data-position="left"
+  data-accent-color="#7c3aed"
+  defer
+></script>
+```
+
+## Test the Headless API
+
+Prefer to build your own UI? Test the REST endpoints:
+
+<CodeGroup>
+```bash curl (non-streaming)
+curl -X POST http://localhost:4000/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: change-me-widget-key" \
+  -d '{
+    "sessionId": "test-session-123",
+    "message": "Hello, what can you do?"
+  }'
+```
+
+```bash curl (streaming)
+curl -X POST http://localhost:4000/v1/chat/stream \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: change-me-widget-key" \
+  -d '{
+    "sessionId": "test-session-123",
+    "message": "Tell me a short story"
+  }'
+```
+
+```javascript JavaScript fetch
+const response = await fetch("http://localhost:4000/v1/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "change-me-widget-key"
+  },
+  body: JSON.stringify({
+    sessionId: "test-session-456",
+    message: "What's the weather like?"
+  })
+});
+
+const data = await response.json();
+console.log(data);
+// { conversationId: "...", message: "..." }
+```
+</CodeGroup>
+
+The streaming endpoint returns NDJSON events:
+
+```json
+{"type":"start","conversationId":"j57abc123..."}
+{"type":"token","token":"I"}
+{"type":"token","token":" can"}
+{"type":"token","token":" help"}
+{"type":"done","message":"I can help with...","conversationId":"j57abc123..."}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Learn the Architecture" icon="diagram-project" href="/architecture">
+    Understand how Convex, Express, and the widget communicate
+  </Card>
+  
+  <Card title="Deploy to Production" icon="cloud" href="/deployment/overview">
+    Deploy the backend, dashboard, and Convex to cloud providers
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api/health">
+    Complete reference for all chat and admin endpoints
+  </Card>
+  
+  <Card title="Customize the Widget" icon="palette" href="/widget/customization">
+    Customize widget appearance, colors, and positioning
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Widget doesn't appear on the page">
+    Check these common issues:
+    
+    - Verify backend is running: `curl http://localhost:4000/health`
+    - Check browser console for JavaScript errors
+    - Confirm the script URL is correct: `http://localhost:4000/widget/chat-widget.js`
+    - Ensure `data-api-url` and `data-api-key` attributes are set
+  </Accordion>
+  
+  <Accordion title="401 Unauthorized errors">
+    The `data-api-key` attribute must match `WIDGET_API_KEY` in your `.env` file.
+    
+    Double-check:
+    ```bash
+    # In .env
+    WIDGET_API_KEY=your-secret-key
+    
+    # In HTML
+    data-api-key="your-secret-key"
+    ```
+  </Accordion>
+  
+  <Accordion title="Convex connection errors">
+    Make sure:
+    
+    - `npm run dev:convex` is running in a separate terminal
+    - `CONVEX_URL` in `.env` matches the URL shown in Convex dev output
+    - You've run `npm run codegen` to generate types
+  </Accordion>
+  
+  <Accordion title="Dashboard login not working">
+    Verify `DASHBOARD_PASSWORD` in `.env`. The login uses this exact value.
+    
+    If you recently changed it, restart the dashboard:
+    ```bash
+    # Stop dev command (Ctrl+C), then restart
+    npm run dev
+    ```
+  </Accordion>
+  
+  <Accordion title="Rate limit errors (429)">
+    The backend limits requests by IP address. Default: 30 requests per minute.
+    
+    Adjust in `.env`:
+    ```bash
+    RATE_LIMIT_WINDOW_MS=60000
+    RATE_LIMIT_MAX_REQUESTS=100
+    ```
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+**Important**: Never commit your `.env` file to version control. It contains sensitive API keys and passwords.
+</Warning>

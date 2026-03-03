@@ -1,0 +1,108 @@
+---
+title: "List Conversations"
+api: "GET /v1/admin/conversations"
+---
+
+Retrieves a paginated list of all conversations in the system.
+
+## Authentication
+
+This endpoint requires admin authentication via the `x-admin-api-key` header.
+
+<ParamField header="x-admin-api-key" type="string" required>
+  Admin API key for authentication
+</ParamField>
+
+## Query Parameters
+
+<ParamField query="limit" type="number" default={100}>
+  Maximum number of conversations to return. Must be a positive integer up to 200.
+</ParamField>
+
+## Response
+
+<ResponseField name="conversations" type="ConversationSummary[]">
+  Array of conversation summaries
+  
+  <Expandable title="ConversationSummary properties">
+    <ResponseField name="_id" type="string">
+      Unique conversation identifier
+    </ResponseField>
+    
+    <ResponseField name="_creationTime" type="number">
+      Timestamp when the conversation was created (Convex internal)
+    </ResponseField>
+    
+    <ResponseField name="sessionId" type="string">
+      Session identifier associated with this conversation
+    </ResponseField>
+    
+    <ResponseField name="createdAt" type="number">
+      Timestamp when the conversation was created
+    </ResponseField>
+    
+    <ResponseField name="updatedAt" type="number">
+      Timestamp when the conversation was last updated
+    </ResponseField>
+    
+    <ResponseField name="lastMessage" type="string">
+      Preview of the most recent message in the conversation
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total number of conversations in the system (before limit is applied)
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://your-domain.com/v1/admin/conversations?limit=50" \
+  -H "x-admin-api-key: your-admin-api-key"
+```
+
+## Example Response
+
+```json
+{
+  "conversations": [
+    {
+      "_id": "jd7s8dk2ls8dk3ks9d",
+      "_creationTime": 1709481600000,
+      "sessionId": "user-session-123",
+      "createdAt": 1709481600000,
+      "updatedAt": 1709481650000,
+      "lastMessage": "Thank you for your help!"
+    }
+  ],
+  "total": 145
+}
+```
+
+## Error Responses
+
+<ResponseField name="error" type="string">
+  Error message
+</ResponseField>
+
+### 400 Bad Request
+```json
+{
+  "error": "Invalid query parameters"
+}
+```
+
+### 401 Unauthorized
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+### 503 Service Unavailable
+```json
+{
+  "error": "ADMIN_API_KEY is not configured on this deployment"
+}
+```

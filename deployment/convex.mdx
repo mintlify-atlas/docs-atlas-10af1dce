@@ -1,0 +1,112 @@
+---
+title: "Deploy Convex"
+description: "Deploy Convex functions and database for Open Chat Widget"
+---
+
+## Overview
+
+Convex provides the serverless backend for storing conversations and messages. You need to deploy your Convex functions before deploying the backend and dashboard.
+
+## Prerequisites
+
+- Convex account (sign up at [convex.dev](https://convex.dev))
+- Node.js 20+ installed
+- Project dependencies installed (`npm install`)
+
+## Deployment Steps
+
+### 1. Generate Types
+
+Generate TypeScript types from your Convex schema:
+
+```bash
+npm run codegen
+```
+
+This runs `convex codegen` and creates type definitions used by the backend and dashboard.
+
+### 2. Deploy to Convex Cloud
+
+Deploy your Convex functions and schema:
+
+```bash
+npx convex deploy
+```
+
+This command:
+- Creates a production deployment on Convex Cloud
+- Deploys all functions from the `convex/` directory
+- Applies the database schema
+- Returns your production `CONVEX_URL`
+
+### 3. Note Your CONVEX_URL
+
+After deployment, copy your production `CONVEX_URL`. It will look like:
+
+```
+https://your-deployment.convex.cloud
+```
+
+You'll need this URL for:
+- Backend environment variables
+- Dashboard environment variables
+
+## Environment Variables
+
+### Backend
+
+Set in your backend deployment:
+
+```bash
+CONVEX_URL=https://your-deployment.convex.cloud
+```
+
+### Dashboard
+
+Set in your dashboard deployment:
+
+```bash
+CONVEX_URL=https://your-deployment.convex.cloud
+```
+
+## Convex Schema
+
+The project includes:
+
+- **conversations** table - Stores chat sessions with sessionId and timestamps
+- **messages** table - Stores individual messages linked to conversations
+
+These are defined in `convex/schema.ts` and automatically deployed.
+
+## Development vs Production
+
+During development:
+```bash
+npm run dev:convex
+```
+
+This runs `convex dev` which:
+- Watches for changes and auto-deploys
+- Provides a development Convex URL
+- Hot-reloads functions
+
+For production:
+```bash
+npx convex deploy
+```
+
+This creates a separate production deployment with its own URL.
+
+## Verifying Deployment
+
+After deployment:
+1. Check the Convex dashboard at [dashboard.convex.dev](https://dashboard.convex.dev)
+2. Verify your functions are listed
+3. Check that tables are created
+4. Test queries using the dashboard's query console
+
+## Next Steps
+
+After deploying Convex:
+1. [Deploy the backend](/deployment/backend) with your `CONVEX_URL`
+2. [Deploy the dashboard](/deployment/dashboard) (optional)

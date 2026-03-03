@@ -1,0 +1,102 @@
+---
+title: "Deployment Overview"
+description: "Learn about the deployment architecture and recommended setup for Open Chat Widget"
+---
+
+## Architecture
+
+The Open Chat Widget deployment consists of three main components:
+
+1. **Convex Project** - Serverless backend for conversations and messages storage
+2. **Backend API** - Node.js/Express server handling OpenAI streaming and widget requests
+3. **Dashboard** (optional) - Next.js admin interface for viewing conversations
+
+Each adopter typically deploys:
+- 1 Convex project
+- 1 backend deployment
+- 1 dashboard deployment (optional)
+- Any number of websites/apps embedding the widget or calling the headless API
+
+## Deployment Targets
+
+### Convex
+- Deploy to Convex Cloud using `npx convex deploy`
+- See [Convex Deployment](/deployment/convex) for details
+
+### Backend
+Supported platforms:
+- Render
+- Railway
+- Fly.io
+- Any Node.js host
+- Docker (self-hosted)
+
+See [Backend Deployment](/deployment/backend) for details
+
+### Dashboard
+Recommended platform:
+- Vercel (optimized for Next.js)
+- Any Node.js host
+- Docker (self-hosted)
+
+See [Dashboard Deployment](/deployment/dashboard) for details
+
+## Recommended Setup
+
+### Step 1: Deploy Convex
+
+```bash
+npx convex deploy
+```
+
+Note your production `CONVEX_URL` (e.g., `https://your-deployment.convex.cloud`)
+
+### Step 2: Deploy Backend
+
+Deploy to your chosen platform with required environment variables:
+- `CONVEX_URL` - Your production Convex URL
+- `OPENAI_API_KEY` - Your OpenAI API key
+- `WIDGET_API_KEY` - Strong random secret for widget authentication
+- `CORS_ORIGIN` - Comma-separated list of allowed origins
+
+### Step 3: Deploy Dashboard (Optional)
+
+Deploy to Vercel or your chosen platform with:
+- `CONVEX_URL` - Your production Convex URL
+- `NEXT_PUBLIC_BACKEND_URL` - Your backend URL
+- `DASHBOARD_PASSWORD` - Strong password for admin access
+
+### Step 4: Embed Widget
+
+Add the widget script to your website:
+
+```html
+<script
+  src="https://your-backend-domain/widget/chat-widget.js"
+  data-api-url="https://your-backend-domain/chat"
+  data-api-key="your-widget-api-key"
+  data-title="Support"
+  data-welcome-message="Hey! How can I help?"
+  defer
+></script>
+```
+
+## Production Smoke Tests
+
+Verify your deployment:
+
+- `GET https://<backend>/health` returns `{"status":"ok"}`
+- `GET https://<backend>/widget/chat-widget.js` returns JavaScript
+- `POST https://<backend>/v1/chat` returns JSON reply
+- `POST https://<backend>/v1/chat/stream` streams NDJSON
+- `GET https://<backend>/v1/openapi.json` returns OpenAPI document
+- Dashboard login works at `/login`
+
+## Security Considerations
+
+- Rotate all API keys and passwords regularly
+- Keep `OPENAI_API_KEY` server-side only
+- Restrict `CORS_ORIGIN` to trusted domains (never use `*` in production)
+- Serve all services over HTTPS
+- The backend includes rate limiting by default
+- API key/password checks use timing-safe comparison

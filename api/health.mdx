@@ -1,0 +1,47 @@
+---
+title: "Health Check"
+api: "GET /health"
+description: "Health check endpoint to verify the API is running"
+---
+
+## Endpoint
+
+```
+GET /health
+```
+
+## Authentication
+
+No authentication required.
+
+## Response
+
+<ResponseField name="status" type="string" required>
+  Service status indicator. Returns `"ok"` when healthy.
+</ResponseField>
+
+### Success Response (200)
+
+```json
+{
+  "status": "ok"
+}
+```
+
+## Example Request
+
+```bash cURL
+curl https://your-api-domain.com/health
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-api-domain.com/health');
+const data = await response.json();
+console.log(data.status); // "ok"
+```
+
+## Notes
+
+- This endpoint is useful for monitoring and uptime checks
+- Returns `Cache-Control: no-store` to prevent caching
+- No rate limiting applied to this endpoint

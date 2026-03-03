@@ -1,0 +1,247 @@
+---
+title: "Streaming API"
+description: "Send chat messages and receive responses as they're generated using NDJSON streams"
+---
+
+The streaming endpoint (`POST /v1/chat/stream`) returns the assistant's response as newline-delimited JSON (NDJSON) events. This allows you to display the response progressively as it's being generated, providing a better user experience.
+
+## Endpoint
+
+```
+POST /v1/chat/stream
+```
+
+## Request Headers
+
+```http
+Content-Type: application/json
+x-api-key: <WIDGET_API_KEY>
+```
+
+You can also use `x-widget-api-key` instead of `x-api-key`.
+
+## Request Body
+
+```json
+{
+  "sessionId": "my-session-id",
+  "message": "Hello, how can you help me?"
+}
+```
+
+### Parameters
+
+<ParamField path="sessionId" type="string" required>
+  Unique identifier for the user session. Must be 1-128 characters, alphanumeric with `._:-` allowed.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The user's message. Must be 1-4000 characters.
+</ParamField>
+
+## Response Format
+
+On success, returns a `200 OK` status with `Content-Type: application/x-ndjson` and a stream of JSON events.
+
+### Stream Event Types
+
+The stream consists of four event types, each on its own line:
+
+#### Start Event
+
+Sent first to indicate the stream has begun:
+
+```json
+{"type":"start","conversationId":"..."}
+```
+
+<ResponseField name="type" type="string">
+  Always `"start"`
+</ResponseField>
+
+<ResponseField name="conversationId" type="string">
+  The unique ID of the conversation
+</ResponseField>
+
+#### Token Event
+
+Sent for each token (word/word fragment) as it's generated:
+
+```json
+{"type":"token","token":"..."}
+```
+
+<ResponseField name="type" type="string">
+  Always `"token"`
+</ResponseField>
+
+<ResponseField name="token" type="string">
+  A single token from the assistant's response
+</ResponseField>
+
+#### Done Event
+
+Sent last when the response is complete:
+
+```json
+{"type":"done","message":"...","conversationId":"..."}
+```
+
+<ResponseField name="type" type="string">
+  Always `"done"`
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  The complete assistant response (all tokens combined)
+</ResponseField>
+
+<ResponseField name="conversationId" type="string">
+  The unique ID of the conversation
+</ResponseField>
+
+#### Error Event
+
+Sent if an error occurs during streaming:
+
+```json
+{"type":"error","error":"..."}
+```
+
+<ResponseField name="type" type="string">
+  Always `"error"`
+</ResponseField>
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+## Example Usage
+
+Here's a complete example showing how to consume the stream:
+
+```typescript
+const response = await fetch("https://<backend-domain>/v1/chat/stream", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-api-key": "<WIDGET_API_KEY>"
+  },
+  body: JSON.stringify({
+    sessionId: "my-session-id",
+    message: "Hello"
+  })
+});
+
+if (!response.ok) {
+  throw new Error(`HTTP error! status: ${response.status}`);
+}
+
+if (!response.body) {
+  throw new Error("No response body");
+}
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = "";
+let conversationId = "";
+let fullMessage = "";
+
+while (true) {
+  const { done, value } = await reader.read();
+  
+  if (done) {
+    break;
+  }
+  
+  buffer += decoder.decode(value, { stream: true });
+  
+  // Process complete lines (NDJSON format)
+  const lines = buffer.split("\n");
+  buffer = lines.pop() || ""; // Keep incomplete line in buffer
+  
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    
+    const event = JSON.parse(line);
+    
+    switch (event.type) {
+      case "start":
+        conversationId = event.conversationId;
+        console.log("Stream started:", conversationId);
+        break;
+        
+      case "token":
+        fullMessage += event.token;
+        console.log("Token received:", event.token);
+        // Update your UI with the new token
+        break;
+        
+      case "done":
+        console.log("Stream complete:", event.message);
+        console.log("Conversation ID:", event.conversationId);
+        break;
+        
+      case "error":
+        console.error("Stream error:", event.error);
+        break;
+    }
+  }
+}
+```
+
+## Error Responses
+
+If an error occurs before streaming begins, you'll receive a standard JSON error response:
+
+### 400 Bad Request
+
+```json
+{
+  "error": "Invalid request payload"
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+### 429 Too Many Requests
+
+```json
+{
+  "error": "Too many requests"
+}
+```
+
+### 500 Internal Server Error
+
+If an error occurs after streaming has started, you'll receive an error event in the stream:
+
+```json
+{"type":"error","error":"Internal server error"}
+```
+
+## How It Works
+
+When you send a message to `/v1/chat/stream`, the backend (backend/src/server.ts:508-567):
+
+1. Validates your API key and request payload
+2. Creates or retrieves the conversation based on `sessionId`
+3. Adds your message to the conversation history
+4. Opens a streaming connection to OpenAI
+5. Sends a `start` event with the conversation ID
+6. Forwards each `token` event as it arrives from OpenAI
+7. Saves the complete assistant message to the database
+8. Sends a `done` event with the complete message
+
+<Info>
+  The stream uses NDJSON (Newline Delimited JSON) format where each line is a complete JSON object. This makes it easy to parse line-by-line without waiting for the entire response.
+</Info>
+
+<Tip>
+  The streaming endpoint provides the same functionality as the non-streaming endpoint but with better perceived performance. Users can start reading the response immediately instead of waiting for the entire message to be generated.
+</Tip>

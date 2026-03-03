@@ -1,0 +1,119 @@
+---
+title: "Embedding the Widget"
+description: "Learn how to embed the Open Chat Widget on your website using a simple script tag"
+---
+
+The Open Chat Widget can be embedded on any website by adding a single script tag to your HTML. The widget is a self-contained JavaScript bundle that requires no additional dependencies.
+
+## Basic Embedding
+
+Add the script tag to your HTML file, typically just before the closing `</body>` tag:
+
+```html
+<script
+  src="http://localhost:4000/widget/chat-widget.js"
+  data-api-url="http://localhost:4000/chat"
+  data-api-key="change-me-widget-key"
+  defer
+></script>
+```
+
+<Note>
+The `defer` attribute ensures the script loads asynchronously without blocking page rendering.
+</Note>
+
+## Complete Example
+
+Here's a full example with all available configuration options:
+
+```html
+<script
+  src="http://localhost:4000/widget/chat-widget.js"
+  data-api-url="http://localhost:4000/chat"
+  data-api-key="change-me-widget-key"
+  data-title="Support"
+  data-welcome-message="Hey! How can I help?"
+  data-input-placeholder="Type your question..."
+  data-position="right"
+  data-accent-color="#0ea5e9"
+  defer
+></script>
+```
+
+## Getting the Widget Bundle
+
+The widget JavaScript bundle is served from your backend deployment:
+
+### Development
+```
+http://localhost:4000/widget/chat-widget.js
+```
+
+### Production
+```
+https://your-backend-domain.com/widget/chat-widget.js
+```
+
+<Warning>
+Make sure your backend is running and the `/widget/chat-widget.js` endpoint is accessible. You can verify this by visiting the URL directly in your browser.
+</Warning>
+
+## Widget Initialization
+
+The widget automatically initializes when the DOM is ready. It reads all configuration from the `data-*` attributes on the script tag.
+
+```typescript
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrapWidget);
+} else {
+  bootstrapWidget();
+}
+```
+
+The widget creates a fixed-position element that doesn't interfere with your page layout:
+
+- **Root element ID**: `os-chat-widget-root`
+- **Z-index**: `999999` (ensures it appears above most content)
+- **Position**: Fixed at bottom-left or bottom-right corner
+
+## Required Attributes
+
+Only two attributes are required for the widget to work:
+
+<ParamField path="data-api-url" type="string" required>
+  The URL of your backend chat API endpoint. Example: `http://localhost:4000/chat`
+</ParamField>
+
+<ParamField path="data-api-key" type="string" required>
+  Your widget API key for authentication. This should match the `WIDGET_API_KEY` environment variable in your backend.
+</ParamField>
+
+<Note>
+If either `data-api-url` or `data-api-key` is missing, the widget will log an error to the console and not initialize:
+```
+[os-chat-widget] Missing required data-api-url or data-api-key attributes.
+```
+</Note>
+
+## Multiple Widgets
+
+The widget checks for existing instances and won't initialize twice on the same page:
+
+```typescript
+if (document.getElementById(ROOT_ID)) {
+  return;
+}
+```
+
+This prevents conflicts if the script is accidentally included multiple times.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/widget/configuration">
+    Customize the widget with data attributes
+  </Card>
+  <Card title="Customization" icon="palette" href="/widget/customization">
+    Style the widget to match your brand
+  </Card>
+</CardGroup>

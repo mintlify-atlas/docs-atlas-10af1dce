@@ -1,0 +1,208 @@
+---
+title: API Keys
+description: API key authentication, timing-safe validation, and rotation best practices
+---
+
+The Open Chat Widget uses two separate API keys to secure different endpoint categories.
+
+## API Key Types
+
+### WIDGET_API_KEY
+
+Protects all chat endpoints that the widget and headless clients use:
+
+- `POST /v1/chat` - Non-streaming chat
+- `POST /v1/chat/stream` - Streaming chat (NDJSON)
+- `POST /chat` - Legacy streaming endpoint
+
+**Environment variable:**
+
+```bash
+WIDGET_API_KEY=your-strong-random-secret-key
+```
+
+**Required headers** (either one):
+
+```http
+X-Api-Key: your-strong-random-secret-key
+```
+
+or
+
+```http
+X-Widget-Api-Key: your-strong-random-secret-key
+```
+
+### ADMIN_API_KEY
+
+Protects admin endpoints for viewing conversations:
+
+- `GET /v1/admin/conversations` - List conversations
+- `GET /v1/admin/conversations/:conversationId` - Get conversation thread
+
+**Environment variable:**
+
+```bash
+ADMIN_API_KEY=your-strong-random-admin-key
+```
+
+**Required header:**
+
+```http
+X-Admin-Api-Key: your-strong-random-admin-key
+```
+
+<Note>
+  `ADMIN_API_KEY` is optional. If not configured, admin endpoints return `503 Service Unavailable`.
+</Note>
+
+## Timing-Safe Comparison
+
+All API key validation uses the `secureEquals` function to prevent timing attacks:
+
+```typescript
+function secureEquals(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+```
+
+This implementation:
+
+1. Converts both strings to buffers
+2. Checks length equality first (fast path for obvious mismatches)
+3. Uses Node.js `crypto.timingSafeEqual()` for constant-time comparison
+4. Prevents attackers from measuring response times to guess key characters
+
+## Authentication Flow
+
+### Chat Endpoints
+
+The `requireChatApiKey` middleware validates chat requests:
+
+```typescript
+function requireChatApiKey(req: Request, res: Response): boolean {
+  const apiKey = getChatApiKey(req);
+
+  if (!apiKey || !secureEquals(env.WIDGET_API_KEY, apiKey)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+
+  return true;
+}
+```
+
+Accepts keys from either `X-Api-Key` or `X-Widget-Api-Key` headers for backward compatibility.
+
+### Admin Endpoints
+
+The `requireAdminApiKey` middleware validates admin requests:
+
+```typescript
+function requireAdminApiKey(req: Request, res: Response): boolean {
+  if (!env.ADMIN_API_KEY) {
+    res.status(503).json({ error: "ADMIN_API_KEY is not configured on this deployment" });
+    return false;
+  }
+
+  const apiKey = req.header("x-admin-api-key") ?? "";
+
+  if (!secureEquals(env.ADMIN_API_KEY, apiKey)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+
+  return true;
+}
+```
+
+## API Key Rotation
+
+Follow these steps to rotate API keys without downtime:
+
+### Rotating WIDGET_API_KEY
+
+1. **Generate new key**: Create a strong random string (32+ characters)
+
+```bash
+openssl rand -base64 32
+```
+
+2. **Update backend environment**: Set new `WIDGET_API_KEY` and redeploy
+
+3. **Update widget embedding**: Change `data-api-key` attribute on all embedded widgets
+
+```html
+<script
+  src="https://your-backend.com/widget/chat-widget.js"
+  data-api-key="new-key-here"
+  ...
+></script>
+```
+
+4. **Update headless clients**: Update `X-Api-Key` header in all API calls
+
+5. **Verify**: Test chat functionality with new key
+
+### Rotating ADMIN_API_KEY
+
+1. **Generate new key**: Create a strong random string
+
+```bash
+openssl rand -base64 32
+```
+
+2. **Update backend environment**: Set new `ADMIN_API_KEY` and redeploy
+
+3. **Update dashboard environment**: Set new `ADMIN_API_KEY` in dashboard config if applicable
+
+4. **Update admin clients**: Update `X-Admin-Api-Key` header in any admin API integrations
+
+5. **Verify**: Test admin endpoints with new key
+
+## Best Practices
+
+<Warning>
+  Never commit API keys to version control. Use environment variables or secret management systems.
+</Warning>
+
+1. **Generate strong keys**: Use cryptographically secure random generators (32+ characters)
+2. **Rotate regularly**: Change keys quarterly or after suspected exposure
+3. **Separate keys**: Keep `WIDGET_API_KEY` and `ADMIN_API_KEY` different
+4. **Limit distribution**: Only share `WIDGET_API_KEY` with trusted frontend deployments
+5. **Monitor usage**: Watch for unexpected 401 responses indicating invalid keys
+6. **Use HTTPS**: Always transmit keys over encrypted connections
+
+## Error Responses
+
+### Missing or Invalid Key
+
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+HTTP Status: `401 Unauthorized`
+
+### Admin Key Not Configured
+
+```json
+{
+  "error": "ADMIN_API_KEY is not configured on this deployment"
+}
+```
+
+HTTP Status: `503 Service Unavailable`
+
+## Related Documentation
+
+- [Security Overview](/security/overview) - Complete security features
+- [CORS Configuration](/security/cors) - Cross-origin access control

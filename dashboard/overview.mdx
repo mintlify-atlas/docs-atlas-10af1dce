@@ -1,0 +1,72 @@
+---
+title: Dashboard Overview
+description: Learn about the admin dashboard for managing and viewing chat conversations
+---
+
+The Open Chat Widget dashboard is a Next.js-based admin interface that provides a centralized view of all chat conversations captured through your widget or headless API.
+
+## What is the Dashboard?
+
+The dashboard serves as your administration panel for monitoring and reviewing customer interactions. It provides:
+
+- **Conversation List**: View all chat sessions in one place
+- **Message Threading**: Drill down into individual conversations to see the full message history
+- **Session Grouping**: Conversations are organized by `sessionId` for easy tracking
+- **Secure Access**: Password-protected authentication to keep your data safe
+
+## Key Features
+
+### Password-Protected Login
+
+The dashboard requires authentication using a static password configured via the `DASHBOARD_PASSWORD` environment variable. This ensures only authorized personnel can access conversation data.
+
+### Real-Time Data from Convex
+
+The dashboard connects directly to your Convex database to fetch conversations and messages. It uses server-side rendering to display up-to-date information on every page load.
+
+### Clean, Minimal UI
+
+Built with Next.js App Router and modern React patterns, the dashboard provides:
+
+- Responsive design that works on desktop and mobile
+- Session-based authentication with HTTP-only cookies
+- Fast page navigation with Next.js Link components
+- Formatted timestamps for easy reading
+
+## Technology Stack
+
+The dashboard is built using:
+
+- **Next.js 15+** with App Router
+- **TypeScript** for type safety
+- **Convex HTTP Client** for database queries
+- **Server Components** for efficient data fetching
+
+## Getting Started
+
+To learn more about using the dashboard:
+
+- [Authentication](/dashboard/authentication) - Set up login and security
+- [Conversations](/dashboard/conversations) - Browse and view chat sessions
+
+## Architecture
+
+The dashboard follows Next.js best practices:
+
+```text
+dashboard/
+├── app/
+│   ├── page.tsx                    # Main conversation list
+│   ├── login/page.tsx              # Login page
+│   ├── conversations/[id]/page.tsx # Individual conversation view
+│   └── api/
+│       ├── login/route.ts          # Login API endpoint
+│       └── logout/route.ts         # Logout API endpoint
+├── components/
+│   └── login-form.tsx              # Client-side login form
+└── lib/
+    ├── auth.ts                     # Authentication utilities
+    └── convex.ts                   # Convex client setup
+```
+
+All pages require authentication except `/login`, which redirects authenticated users to the main dashboard automatically.

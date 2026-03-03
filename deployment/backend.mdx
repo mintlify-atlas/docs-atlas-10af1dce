@@ -1,0 +1,227 @@
+---
+title: "Deploy Backend"
+description: "Deploy the Node.js backend API to Render, Railway, Fly.io, or other Node hosts"
+---
+
+## Overview
+
+The backend is a Node.js/Express server that:
+- Handles OpenAI streaming responses
+- Serves the widget JavaScript bundle
+- Provides REST API endpoints for chat
+- Manages authentication via API keys
+- Stores conversations in Convex
+
+## Prerequisites
+
+- [Convex deployed](/deployment/convex) with production `CONVEX_URL`
+- OpenAI API key
+- Platform account (Render/Railway/Fly.io) or Node.js host
+
+## Build Commands
+
+### Build Command
+
+```bash
+npm install --include=dev && npm run build:backend
+```
+
+This:
+- Installs all dependencies (including dev dependencies needed for build)
+- Builds the widget bundle
+- Compiles TypeScript backend code to `backend/dist/`
+
+### Start Command
+
+```bash
+npm run start:backend
+```
+
+This runs `node dist/server.js` in the backend workspace.
+
+## Environment Variables
+
+### Required
+
+```bash
+# Node environment
+NODE_ENV=production
+
+# Convex backend
+CONVEX_URL=https://your-deployment.convex.cloud
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4.1-mini
+
+# Widget authentication
+WIDGET_API_KEY=strong-random-secret-here
+
+# CORS configuration
+CORS_ORIGIN=https://your-site.com,https://your-dashboard.com
+
+# Server port
+PORT=4000
+```
+
+### Optional
+
+```bash
+# Admin API endpoints (/v1/admin/*)
+ADMIN_API_KEY=strong-random-secret-here
+
+# Rate limiting
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=30
+
+# Widget bundle path (usually auto-detected)
+WIDGET_BUNDLE_PATH=../widget/dist/chat-widget.js
+```
+
+### Environment Variable Details
+
+#### CONVEX_URL
+Your production Convex deployment URL from `npx convex deploy`.
+
+#### OPENAI_API_KEY
+Your OpenAI API key. Keep this secret and server-side only.
+
+#### OPENAI_MODEL
+The OpenAI model to use. Recommended: `gpt-4.1-mini` for fast responses.
+
+#### WIDGET_API_KEY
+Strong random secret used to authenticate widget and headless API requests. Generate with:
+```bash
+openssl rand -base64 32
+```
+
+#### ADMIN_API_KEY
+Optional. Required only if you want to use `/v1/admin/*` endpoints to fetch conversations via API. Generate with:
+```bash
+openssl rand -base64 32
+```
+
+#### CORS_ORIGIN
+Comma-separated list of allowed origins. **Never use `*` in production.** Examples:
+```bash
+CORS_ORIGIN=https://yoursite.com,https://dashboard.yoursite.com
+```
+
+#### PORT
+Port the server listens on. Default: `4000`.
+
+## Platform-Specific Instructions
+
+### Render
+
+1. Create new **Web Service**
+2. Connect your repository
+3. Settings:
+   - **Root Directory**: Leave empty (use repo root)
+   - **Build Command**: `npm install --include=dev && npm run build:backend`
+   - **Start Command**: `npm run start:backend`
+4. Add environment variables listed above
+5. Deploy
+
+### Railway
+
+1. Create new project from GitHub repo
+2. Settings:
+   - **Build Command**: `npm install --include=dev && npm run build:backend`
+   - **Start Command**: `npm run start:backend`
+3. Add environment variables in Variables tab
+4. Deploy
+
+### Fly.io
+
+1. Install flyctl CLI
+2. Run `fly launch` in repo root
+3. Configure `fly.toml`:
+```toml
+app = "your-app-name"
+
+[build]
+  [build.args]
+    NODE_ENV = "production"
+
+[env]
+  PORT = "4000"
+
+[[services]]
+  internal_port = 4000
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+```
+4. Set secrets:
+```bash
+fly secrets set CONVEX_URL=https://...
+fly secrets set OPENAI_API_KEY=sk-...
+fly secrets set WIDGET_API_KEY=...
+fly secrets set CORS_ORIGIN=...
+```
+5. Deploy: `fly deploy`
+
+### Generic Node.js Host
+
+1. SSH into your server
+2. Clone repository
+3. Install dependencies: `npm install --include=dev`
+4. Build: `npm run build:backend`
+5. Create `.env` file with environment variables
+6. Run with process manager (PM2 recommended):
+```bash
+pm2 start "npm run start:backend" --name chat-backend
+```
+
+## API Endpoints
+
+After deployment, your backend exposes:
+
+- `GET /health` - Health check
+- `GET /widget/chat-widget.js` - Widget bundle
+- `POST /chat` - Legacy streaming endpoint
+- `POST /v1/chat` - Headless JSON response
+- `POST /v1/chat/stream` - Headless NDJSON stream
+- `GET /v1/openapi.json` - OpenAPI spec
+- `GET /v1/admin/conversations` - Admin endpoint (requires ADMIN_API_KEY)
+- `GET /v1/admin/conversations/:id` - Admin endpoint (requires ADMIN_API_KEY)
+
+## Verify Deployment
+
+Test your backend:
+
+```bash
+# Health check
+curl https://your-backend.com/health
+
+# Widget bundle
+curl https://your-backend.com/widget/chat-widget.js
+
+# Chat API
+curl -X POST https://your-backend.com/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-widget-api-key" \
+  -d '{"sessionId":"test","message":"Hello"}'
+```
+
+## Security Features
+
+The backend includes:
+- Rate limiting (configurable via environment variables)
+- Timing-safe API key comparison
+- Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+- HSTS in production
+- CORS origin validation
+- Input validation using Zod schemas
+
+## Next Steps
+
+1. [Deploy the dashboard](/deployment/dashboard) (optional)
+2. [Embed the widget](/quickstart) on your website

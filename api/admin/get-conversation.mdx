@@ -1,0 +1,152 @@
+---
+title: "Get Conversation"
+api: "GET /v1/admin/conversations/:conversationId"
+---
+
+Retrieves a complete conversation thread including all messages.
+
+## Authentication
+
+This endpoint requires admin authentication via the `x-admin-api-key` header.
+
+<ParamField header="x-admin-api-key" type="string" required>
+  Admin API key for authentication
+</ParamField>
+
+## Path Parameters
+
+<ParamField path="conversationId" type="string" required>
+  The unique identifier of the conversation to retrieve. Must be 1-128 characters.
+</ParamField>
+
+## Response
+
+Returns a `ConversationThread` object containing the conversation summary and all messages.
+
+<ResponseField name="conversation" type="ConversationSummary">
+  Summary information about the conversation
+  
+  <Expandable title="ConversationSummary properties">
+    <ResponseField name="_id" type="string">
+      Unique conversation identifier
+    </ResponseField>
+    
+    <ResponseField name="_creationTime" type="number">
+      Timestamp when the conversation was created (Convex internal)
+    </ResponseField>
+    
+    <ResponseField name="sessionId" type="string">
+      Session identifier associated with this conversation
+    </ResponseField>
+    
+    <ResponseField name="createdAt" type="number">
+      Timestamp when the conversation was created
+    </ResponseField>
+    
+    <ResponseField name="updatedAt" type="number">
+      Timestamp when the conversation was last updated
+    </ResponseField>
+    
+    <ResponseField name="lastMessage" type="string">
+      Preview of the most recent message in the conversation
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="messages" type="ConversationMessage[]">
+  Array of all messages in the conversation thread
+  
+  <Expandable title="ConversationMessage properties">
+    <ResponseField name="_id" type="string">
+      Unique message identifier
+    </ResponseField>
+    
+    <ResponseField name="role" type="'user' | 'assistant'">
+      The role of the message sender
+    </ResponseField>
+    
+    <ResponseField name="content" type="string">
+      The message content
+    </ResponseField>
+    
+    <ResponseField name="createdAt" type="number">
+      Timestamp when the message was created
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://your-domain.com/v1/admin/conversations/jd7s8dk2ls8dk3ks9d" \
+  -H "x-admin-api-key: your-admin-api-key"
+```
+
+## Example Response
+
+```json
+{
+  "conversation": {
+    "_id": "jd7s8dk2ls8dk3ks9d",
+    "_creationTime": 1709481600000,
+    "sessionId": "user-session-123",
+    "createdAt": 1709481600000,
+    "updatedAt": 1709481650000,
+    "lastMessage": "Thank you for your help!"
+  },
+  "messages": [
+    {
+      "_id": "msg_001",
+      "role": "user",
+      "content": "How do I reset my password?",
+      "createdAt": 1709481600000
+    },
+    {
+      "_id": "msg_002",
+      "role": "assistant",
+      "content": "I can help you reset your password. Please click on the 'Forgot Password' link on the login page.",
+      "createdAt": 1709481620000
+    },
+    {
+      "_id": "msg_003",
+      "role": "user",
+      "content": "Thank you for your help!",
+      "createdAt": 1709481650000
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="error" type="string">
+  Error message
+</ResponseField>
+
+### 400 Bad Request
+```json
+{
+  "error": "Invalid conversationId"
+}
+```
+
+### 401 Unauthorized
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+### 404 Not Found
+```json
+{
+  "error": "Conversation not found"
+}
+```
+
+### 503 Service Unavailable
+```json
+{
+  "error": "ADMIN_API_KEY is not configured on this deployment"
+}
+```

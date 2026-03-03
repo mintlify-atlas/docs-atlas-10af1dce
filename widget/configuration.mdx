@@ -1,0 +1,208 @@
+---
+title: "Widget Configuration"
+description: "Configure the Open Chat Widget using data attributes to customize behavior and appearance"
+---
+
+The widget is configured entirely through `data-*` attributes on the script tag. All configuration is read when the widget initializes.
+
+## Configuration Options
+
+The widget supports the following configuration attributes:
+
+### Required Attributes
+
+<ParamField path="data-api-url" type="string" required>
+  **Required.** The URL of your backend chat API endpoint.
+  
+  The widget sends POST requests to this endpoint with the message data:
+  ```json
+  {
+    "sessionId": "unique-session-id",
+    "message": "user message text"
+  }
+  ```
+  
+  **Example:**
+  ```html
+  data-api-url="http://localhost:4000/chat"
+  ```
+</ParamField>
+
+<ParamField path="data-api-key" type="string" required>
+  **Required.** Your widget API key for authentication.
+  
+  This key is sent in the `x-widget-api-key` header with every request. It must match the `WIDGET_API_KEY` environment variable in your backend.
+  
+  **Example:**
+  ```html
+  data-api-key="change-me-widget-key"
+  ```
+</ParamField>
+
+### Optional Attributes
+
+<ParamField path="data-title" type="string" default="Assistant">
+  The title text displayed in the widget header.
+  
+  **Example:**
+  ```html
+  data-title="Support"
+  ```
+  
+  **Default value:** `"Assistant"`
+</ParamField>
+
+<ParamField path="data-welcome-message" type="string" default="Hi! Ask me anything and I will help you out.">
+  The initial message shown when the widget is opened for the first time.
+  
+  **Example:**
+  ```html
+  data-welcome-message="Hey! How can I help?"
+  ```
+  
+  **Default value:** `"Hi! Ask me anything and I will help you out."`
+</ParamField>
+
+<ParamField path="data-input-placeholder" type="string" default="Type your message...">
+  The placeholder text shown in the message input field.
+  
+  **Example:**
+  ```html
+  data-input-placeholder="Type your question..."
+  ```
+  
+  **Default value:** `"Type your message..."`
+</ParamField>
+
+<ParamField path="data-position" type="string" default="right">
+  The corner where the widget appears on the page.
+  
+  **Accepted values:** `"left"` or `"right"`
+  
+  **Example:**
+  ```html
+  data-position="left"
+  ```
+  
+  **Default value:** `"right"`
+  
+  <Note>
+  Any value other than `"left"` will default to `"right"`.
+  </Note>
+</ParamField>
+
+<ParamField path="data-accent-color" type="string" default="#0ea5e9">
+  The primary color used for the widget theme (header gradient, input focus, etc.).
+  
+  **Accepted formats:** Any valid CSS color (hex, rgb, hsl, color name)
+  
+  **Example:**
+  ```html
+  data-accent-color="#7c3aed"
+  ```
+  
+  **Default value:** `"#0ea5e9"` (cyan/blue)
+</ParamField>
+
+## Configuration Implementation
+
+The widget reads configuration from the script tag's dataset:
+
+```typescript
+type WidgetConfig = {
+  apiUrl: string;
+  apiKey: string;
+  title: string;
+  welcomeMessage: string;
+  inputPlaceholder: string;
+  position: "left" | "right";
+  accentColor: string;
+};
+
+function readConfig(script: HTMLScriptElement | null): WidgetConfig | null {
+  if (!script) {
+    return null;
+  }
+
+  const apiUrl = script.dataset.apiUrl?.trim();
+  const apiKey = script.dataset.apiKey?.trim();
+
+  if (!apiUrl || !apiKey) {
+    return null;
+  }
+
+  const position = script.dataset.position === "left" ? "left" : "right";
+
+  return {
+    apiUrl,
+    apiKey,
+    title: script.dataset.title?.trim() || "Assistant",
+    welcomeMessage:
+      script.dataset.welcomeMessage?.trim() || "Hi! Ask me anything and I will help you out.",
+    inputPlaceholder: script.dataset.inputPlaceholder?.trim() || "Type your message...",
+    position,
+    accentColor: script.dataset.accentColor?.trim() || "#0ea5e9"
+  };
+}
+```
+
+## Complete Configuration Example
+
+Here's an example with all options configured:
+
+```html
+<script
+  src="https://your-backend.com/widget/chat-widget.js"
+  data-api-url="https://your-backend.com/chat"
+  data-api-key="your-production-api-key"
+  data-title="Customer Support"
+  data-welcome-message="Welcome! How can we assist you today?"
+  data-input-placeholder="Ask us anything..."
+  data-position="left"
+  data-accent-color="#7c3aed"
+  defer
+></script>
+```
+
+## Environment-Specific Configuration
+
+You can use different configurations for development and production:
+
+### Development
+```html
+<script
+  src="http://localhost:4000/widget/chat-widget.js"
+  data-api-url="http://localhost:4000/chat"
+  data-api-key="change-me-widget-key"
+  data-title="Dev Chat"
+  data-accent-color="#ef4444"
+  defer
+></script>
+```
+
+### Production
+```html
+<script
+  src="https://api.yoursite.com/widget/chat-widget.js"
+  data-api-url="https://api.yoursite.com/chat"
+  data-api-key="prod-secure-key-xyz"
+  data-title="Support"
+  data-accent-color="#0ea5e9"
+  defer
+></script>
+```
+
+<Warning>
+Never commit production API keys to version control. Use environment variables or a secrets management system to inject the correct `data-api-key` value at build or deploy time.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Embedding" icon="code" href="/widget/embedding">
+    Learn how to embed the widget on your site
+  </Card>
+  <Card title="Customization" icon="palette" href="/widget/customization">
+    Customize the widget styling and behavior
+  </Card>
+</CardGroup>

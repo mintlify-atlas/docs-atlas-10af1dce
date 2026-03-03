@@ -1,0 +1,277 @@
+---
+title: "Widget Customization"
+description: "Customize the appearance and behavior of the Open Chat Widget to match your brand"
+---
+
+The Open Chat Widget provides several customization options to help you match your brand identity and provide the best user experience.
+
+## Visual Customization
+
+### Accent Color
+
+The accent color is used throughout the widget's design:
+
+- Header gradient (from accent color to dark blue)
+- Input field focus border
+- Toggle button gradient
+
+```html
+<script
+  src="http://localhost:4000/widget/chat-widget.js"
+  data-api-url="http://localhost:4000/chat"
+  data-api-key="your-api-key"
+  data-accent-color="#7c3aed"
+  defer
+></script>
+```
+
+<Note>
+You can use any valid CSS color format: hex (`#7c3aed`), rgb (`rgb(124, 58, 237)`), hsl (`hsl(258, 84%, 57%)`), or color names (`purple`).
+</Note>
+
+### Accent Color Examples
+
+<AccordionGroup>
+  <Accordion title="Brand Color Suggestions">
+    - **Blue (Default)**: `#0ea5e9` - Professional and trustworthy
+    - **Purple**: `#7c3aed` - Creative and modern
+    - **Green**: `#10b981` - Eco-friendly and growth-focused
+    - **Orange**: `#f97316` - Energetic and friendly
+    - **Pink**: `#ec4899` - Playful and welcoming
+    - **Teal**: `#14b8a6` - Calm and balanced
+  </Accordion>
+</AccordionGroup>
+
+The accent color is applied to the header and toggle button:
+
+```typescript
+#${ROOT_ID} .osw-toggle {
+  background: linear-gradient(130deg, ${accentColor}, #1e293b);
+}
+
+#${ROOT_ID} .osw-header {
+  background: linear-gradient(130deg, ${accentColor}, #1e3a8a);
+}
+
+#${ROOT_ID} .osw-input:focus {
+  border-color: ${accentColor};
+}
+```
+
+### Position
+
+Control which corner of the screen displays the widget:
+
+```html
+<!-- Right corner (default) -->
+<script data-position="right" ...></script>
+
+<!-- Left corner -->
+<script data-position="left" ...></script>
+```
+
+The widget uses fixed positioning with responsive spacing:
+
+```css
+#os-chat-widget-root {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+}
+
+#os-chat-widget-root[data-position="left"] {
+  right: auto;
+  left: 24px;
+}
+```
+
+## Widget Dimensions
+
+The widget automatically adapts to different screen sizes:
+
+### Desktop
+- **Width**: 360px
+- **Height**: 520px (max 100vh - 120px)
+- **Toggle button**: 62px × 62px
+- **Corner spacing**: 24px from edges
+
+### Mobile
+- **Width**: 100% (with 12px margins)
+- **Height**: min(72vh, 560px)
+- **Corner spacing**: 12px from edges
+
+## Text Customization
+
+Customize the text elements to match your brand voice:
+
+### Header Title
+
+```html
+data-title="Customer Support"
+```
+
+Appears in the widget header when the panel is open.
+
+### Welcome Message
+
+```html
+data-welcome-message="Welcome! How can we assist you today?"
+```
+
+The first message users see when they open the widget. Keep it friendly and concise.
+
+### Input Placeholder
+
+```html
+data-input-placeholder="Ask us anything..."
+```
+
+Shown in the message input field. Use action-oriented language.
+
+## Behavior Customization
+
+### Session Persistence
+
+The widget uses `localStorage` to maintain user sessions across page loads:
+
+```typescript
+const SESSION_STORAGE_KEY = "os-chatbot-session-id";
+const OPEN_STATE_STORAGE_KEY = "os-chatbot-widget-open";
+```
+
+**Session ID** (`os-chatbot-session-id`):
+- Generated once per browser/user
+- Persists across page reloads
+- Used to maintain conversation history
+- Generated using `crypto.randomUUID()` or fallback
+
+**Open State** (`os-chatbot-widget-open`):
+- Remembers if the widget was open or closed
+- Restores state when user returns to the page
+- Values: `"true"` or `"false"`
+
+```typescript
+function getOrCreateSessionId(): string {
+  const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+
+  if (existing) {
+    return existing;
+  }
+
+  const generated =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  localStorage.setItem(SESSION_STORAGE_KEY, generated);
+  return generated;
+}
+```
+
+### Toggle Behavior
+
+The toggle button shows different states:
+
+- **Closed**: Shows "AI" text
+- **Open**: Shows "×" (close icon)
+
+```typescript
+function setOpenState(isOpen: boolean) {
+  root.dataset.open = isOpen ? "true" : "false";
+  toggleButton.textContent = isOpen ? "×" : "AI";
+  localStorage.setItem(OPEN_STATE_STORAGE_KEY, isOpen ? "true" : "false");
+}
+```
+
+### Typing Indicator
+
+While waiting for a response, the widget displays an animated typing indicator:
+
+```typescript
+const frames = ["Thinking", "Thinking.", "Thinking..", "Thinking..."];
+```
+
+The indicator cycles through frames every 320ms.
+
+## Styling Tips
+
+### Match Your Brand
+
+1. **Extract your brand color**: Use your primary brand color for `data-accent-color`
+2. **Consistent voice**: Match your `data-welcome-message` to your brand tone
+3. **Position**: Place the widget where it won't interfere with existing CTAs
+
+### Accessibility Considerations
+
+- The toggle button includes `aria-label="Toggle chat"` for screen readers
+- High contrast text colors ensure readability
+- Focus states are clearly visible with accent color borders
+- The widget uses semantic HTML elements
+
+### Animation
+
+The widget includes a subtle fade-in animation when opening:
+
+```css
+@keyframes osw-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+```
+
+Animation duration: 160ms with ease timing.
+
+## Complete Customization Example
+
+Here's a fully customized widget matching a brand identity:
+
+```html
+<script
+  src="https://api.acmecorp.com/widget/chat-widget.js"
+  data-api-url="https://api.acmecorp.com/chat"
+  data-api-key="acme-prod-key-xyz"
+  data-title="Acme Support"
+  data-welcome-message="Hi there! Our team is here to help. What can we do for you today?"
+  data-input-placeholder="Describe your question..."
+  data-position="right"
+  data-accent-color="#7c3aed"
+  defer
+></script>
+```
+
+This configuration:
+- Uses a purple accent color for a creative brand
+- Positions on the right (most common for Western audiences)
+- Uses friendly, conversational language
+- Shows the company name in the header
+
+## Advanced Customization
+
+<Warning>
+The widget's internal styles cannot be overridden from outside the bundle. All styling is scoped to the widget's root element (`#os-chat-widget-root`) with high specificity.
+</Warning>
+
+For advanced customization beyond what data attributes provide, you would need to:
+
+1. Fork the widget source code (`widget/src/index.ts`)
+2. Modify the `createStyles()` function
+3. Rebuild the bundle with `npm run build:widget`
+4. Deploy your custom bundle
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Embedding" icon="code" href="/widget/embedding">
+    Learn how to embed the widget
+  </Card>
+  <Card title="Configuration" icon="gear" href="/widget/configuration">
+    View all configuration options
+  </Card>
+</CardGroup>

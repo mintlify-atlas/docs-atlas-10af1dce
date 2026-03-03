@@ -1,0 +1,164 @@
+---
+title: "Chat (Non-Streaming)"
+api: "POST /v1/chat"
+description: "Send a chat message and receive a complete response"
+---
+
+## Endpoint
+
+```
+POST /v1/chat
+```
+
+## Authentication
+
+Requires one of the following headers:
+
+- `x-api-key`: Your widget API key
+- `x-widget-api-key`: Your widget API key (alternative)
+
+## Request Body
+
+<ParamField body="sessionId" type="string" required>
+  Unique session identifier. Must match regex pattern `^[A-Za-z0-9._:-]{1,128}$`.
+  
+  Used to track conversation history across multiple requests. Use the same sessionId for continuation of a conversation.
+</ParamField>
+
+<ParamField body="message" type="string" required>
+  User's chat message. Must be between 1 and 4000 characters.
+</ParamField>
+
+### Example Request Body
+
+```json
+{
+  "sessionId": "user-123",
+  "message": "What are your business hours?"
+}
+```
+
+## Response
+
+<ResponseField name="conversationId" type="string" required>
+  Unique identifier for this conversation thread.
+</ResponseField>
+
+<ResponseField name="message" type="string" required>
+  The assistant's complete response message.
+</ResponseField>
+
+### Success Response (200)
+
+```json
+{
+  "conversationId": "j97ch2kj8xm6rpct8te5w9b1fh6pc7k8",
+  "message": "Our business hours are Monday through Friday, 9 AM to 5 PM EST."
+}
+```
+
+## Error Responses
+
+### 400 Bad Request
+
+Returned when request payload is invalid.
+
+```json
+{
+  "error": "Invalid request payload"
+}
+```
+
+Common causes:
+- Missing required fields
+- sessionId doesn't match required pattern
+- message is empty or exceeds 4000 characters
+
+### 401 Unauthorized
+
+Returned when API key is missing or invalid.
+
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+### 429 Too Many Requests
+
+Returned when rate limit is exceeded.
+
+```json
+{
+  "error": "Too many requests"
+}
+```
+
+### 500 Internal Server Error
+
+Returned when an unexpected error occurs.
+
+```json
+{
+  "error": "Internal server error"
+}
+```
+
+## Example Requests
+
+```bash cURL
+curl -X POST https://your-api-domain.com/v1/chat \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key-here" \
+  -d '{
+    "sessionId": "user-123",
+    "message": "Hello, I need help with my account"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://your-api-domain.com/v1/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': 'your-api-key-here'
+  },
+  body: JSON.stringify({
+    sessionId: 'user-123',
+    message: 'Hello, I need help with my account'
+  })
+});
+
+const data = await response.json();
+console.log(data.message);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://your-api-domain.com/v1/chat',
+    headers={
+        'Content-Type': 'application/json',
+        'x-api-key': 'your-api-key-here'
+    },
+    json={
+        'sessionId': 'user-123',
+        'message': 'Hello, I need help with my account'
+    }
+)
+
+data = response.json()
+print(data['message'])
+```
+
+## Rate Limiting
+
+This endpoint is rate limited per client IP address. The limits are configured on the server side.
+
+## Notes
+
+- This endpoint returns the complete response in a single JSON payload
+- For streaming responses, use the `/v1/chat/stream` endpoint instead
+- The conversation history is automatically maintained using the sessionId
+- The assistant uses GPT models configured on the server
